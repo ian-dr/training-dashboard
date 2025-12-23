@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strength Training Program</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .header-section {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .header-section h1 {
+            text-align: center;
+            text-decoration: underline;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .program-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .meta-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-field label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .workout-days {
+            display: grid;
+            gap: 20px;
+        }
+
+        .day-card {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .day-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .exercise-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .exercise-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .exercise-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .exercise-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .exercise-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .detail-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-field label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 3px;
+        }
+
+        .detail-field input {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            text-align: left;
+        }
+
+        .add-exercise-btn {
+            margin-top: 10px;
+        }
+
+        .remove-exercise-btn {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .remove-exercise-btn:hover {
+            background-color: var(--danger-hover);
+        }
+
+        .notes-section {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-top: 20px;
+        }
+
+        @media print {
+            .action-bar,
+            .add-exercise-btn,
+            .remove-exercise-btn {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-wide">
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Back to Dashboard</button>
+            <button class="btn btn-primary" onclick="saveProgram()">Save Program</button>
+            <button class="btn btn-outline" onclick="exportToImage()">Export as Image</button>
+            <button class="btn btn-outline" onclick="printProgram()">Print</button>
+        </div>
+
+        <div class="header-section">
+            <h1>STRENGTH TRAINING PROGRAM</h1>
+
+            <div class="program-meta">
+                <div class="meta-field">
+                    <label>Program Name:</label>
+                    <input type="text" id="programName" placeholder="e.g., Winter Strength Phase">
+                </div>
+                <div class="meta-field">
+                    <label>Training Phase:</label>
+                    <input type="text" id="trainingPhase" placeholder="e.g., Hypertrophy, Strength, Power">
+                </div>
+                <div class="meta-field">
+                    <label>Week #:</label>
+                    <input type="number" id="weekNumber" placeholder="1">
+                </div>
+                <div class="meta-field">
+                    <label>From:</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="meta-field">
+                    <label>To:</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+        </div>
+
+        <div class="workout-days" id="workoutDays">
+            <!-- Days will be generated by JavaScript -->
+        </div>
+
+        <div class="notes-section">
+            <h3>PROGRAM NOTES & GUIDELINES</h3>
+            <textarea id="programNotes" placeholder="Technical cues, progression notes, warm-up protocol, etc..."></textarea>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="scripts/utils.js"></script>
+    <script src="scripts/storage.js"></script>
+    <script>
+        const WORKOUT_DAYS = ['Monday', 'Tuesday', 'Thursday', 'Friday'];
+        let programId = null;
+
+        function createExerciseHTML(exerciseData = {}) {
+            const exerciseId = generateUUID();
+
+            return `
+                <div class="exercise-item" data-exercise-id="${exerciseId}">
+                    <div class="exercise-header">
+                        <input type="text" class="exercise-name" placeholder="Exercise name..." value="${exerciseData.name || ''}">
+                        <button class="remove-exercise-btn" onclick="removeExercise('${exerciseId}')">Remove</button>
+                    </div>
+                    <div class="exercise-details">
+                        <div class="detail-field">
+                            <label>Sets</label>
+                            <input type="text" class="sets-input" placeholder="3-4" value="${exerciseData.sets || ''}">
+                        </div>
+                        <div class="detail-field">
+                            <label>Reps</label>
+                            <input type="text" class="reps-input" placeholder="8-12" value="${exerciseData.reps || ''}">
+                        </div>
+                        <div class="detail-field">
+                            <label>Weight/Load</label>
+                            <input type="text" class="weight-input" placeholder="70%" value="${exerciseData.weight || ''}">
+                        </div>
+                        <div class="detail-field">
+                            <label>Rest (sec)</label>
+                            <input type="text" class="rest-input" placeholder="90-120" value="${exerciseData.rest || ''}">
+                        </div>
+                        <div class="detail-field">
+                            <label>Tempo</label>
+                            <input type="text" class="tempo-input" placeholder="3-1-1-0" value="${exerciseData.tempo || ''}">
+                        </div>
+                        <div class="detail-field">
+                            <label>Notes</label>
+                            <input type="text" class="notes-input" placeholder="Optional notes..." value="${exerciseData.notes || ''}">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createDayCard(day, exercises = []) {
+            const dayId = day.toLowerCase().replace(' ', '-');
+
+            return `
+                <div class="day-card" data-day="${day}">
+                    <div class="day-header">
+                        <h3>${day}</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="date" class="day-date" style="width: auto;" placeholder="Date">
+                            <span style="color: var(--text-secondary); font-size: 0.9rem;">
+                                <span class="exercise-count">${exercises.length}</span> exercises
+                            </span>
+                        </div>
+                    </div>
+                    <div class="exercise-list" id="exercises-${dayId}">
+                        ${exercises.map(ex => createExerciseHTML(ex)).join('')}
+                    </div>
+                    <button class="btn btn-small btn-primary add-exercise-btn" onclick="addExercise('${dayId}')">
+                        + Add Exercise
+                    </button>
+                </div>
+            `;
+        }
+
+        function initializeWorkoutDays(programData = null) {
+            const container = document.getElementById('workoutDays');
+            container.innerHTML = '';
+
+            WORKOUT_DAYS.forEach(day => {
+                const dayId = day.toLowerCase().replace(' ', '-');
+                let exercises = [];
+
+                if (programData && programData.days && programData.days[day]) {
+                    exercises = programData.days[day].exercises || [];
+                }
+
+                container.innerHTML += createDayCard(day, exercises);
+
+                // Set date if available
+                if (programData && programData.days && programData.days[day] && programData.days[day].date) {
+                    const dayCard = container.querySelector(`[data-day="${day}"]`);
+                    const dateInput = dayCard.querySelector('.day-date');
+                    if (dateInput) dateInput.value = programData.days[day].date;
+                }
+            });
+
+            // Initialize auto-resize for notes textarea
+            initAutoResizeTextareas();
+        }
+
+        function addExercise(dayId) {
+            const exerciseList = document.getElementById(`exercises-${dayId}`);
+            exerciseList.insertAdjacentHTML('beforeend', createExerciseHTML());
+            updateExerciseCount(dayId);
+        }
+
+        function removeExercise(exerciseId) {
+            const exercise = document.querySelector(`[data-exercise-id="${exerciseId}"]`);
+            if (exercise) {
+                const dayCard = exercise.closest('.day-card');
+                exercise.remove();
+
+                if (dayCard) {
+                    const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
+                    updateExerciseCount(dayId);
+                }
+            }
+        }
+
+        function updateExerciseCount(dayId) {
+            const dayCard = document.querySelector(`#exercises-${dayId}`).closest('.day-card');
+            const count = dayCard.querySelectorAll('.exercise-item').length;
+            dayCard.querySelector('.exercise-count').textContent = count;
+        }
+
+        function getProgramData() {
+            const days = {};
+
+            document.querySelectorAll('.day-card').forEach(dayCard => {
+                const dayName = dayCard.getAttribute('data-day');
+                const dayDate = dayCard.querySelector('.day-date').value;
+                const exercises = [];
+
+                dayCard.querySelectorAll('.exercise-item').forEach(exercise => {
+                    exercises.push({
+                        name: exercise.querySelector('.exercise-name').value,
+                        sets: exercise.querySelector('.sets-input').value,
+                        reps: exercise.querySelector('.reps-input').value,
+                        weight: exercise.querySelector('.weight-input').value,
+                        rest: exercise.querySelector('.rest-input').value,
+                        tempo: exercise.querySelector('.tempo-input').value,
+                        notes: exercise.querySelector('.notes-input').value
+                    });
+                });
+
+                days[dayName] = {
+                    date: dayDate,
+                    exercises: exercises
+                };
+            });
+
+            return {
+                id: programId,
+                type: 'strength',
+                name: document.getElementById('programName').value || 'Untitled Strength Program',
+                trainingPhase: document.getElementById('trainingPhase').value,
+                weekNumber: document.getElementById('weekNumber').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                notes: document.getElementById('programNotes').value,
+                days: days
+            };
+        }
+
+        function loadProgramData(data) {
+            document.getElementById('programName').value = data.name || '';
+            document.getElementById('trainingPhase').value = data.trainingPhase || '';
+            document.getElementById('weekNumber').value = data.weekNumber || '';
+            document.getElementById('startDate').value = data.startDate || '';
+            document.getElementById('endDate').value = data.endDate || '';
+            document.getElementById('programNotes').value = data.notes || '';
+
+            // Reinitialize with program data
+            initializeWorkoutDays(data);
+        }
+
+        function saveProgram() {
+            const data = getProgramData();
+            const success = storage.saveProgram(data);
+
+            if (success) {
+                showToast('Program saved successfully!', 'success');
+            } else {
+                showToast('Failed to save program', 'error');
+            }
+        }
+
+        function exportToImage() {
+            showLoading();
+
+            const actionBar = document.querySelector('.action-bar');
+            actionBar.style.display = 'none';
+
+            html2canvas(document.body, {
+                backgroundColor: '#f5f5f5',
+                scale: 2
+            }).then(canvas => {
+                const link = document.createElement('a');
+                const programName = document.getElementById('programName').value || 'strength-program';
+                link.download = `${programName}-${formatDate(new Date())}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                actionBar.style.display = 'flex';
+                hideLoading();
+                showToast('Image exported successfully!', 'success');
+            }).catch(error => {
+                console.error('Export failed:', error);
+                actionBar.style.display = 'flex';
+                hideLoading();
+                showToast('Export failed', 'error');
+            });
+        }
+
+        function printProgram() {
+            window.print();
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get program ID from URL
+            programId = getQueryParam('id');
+
+            // Load existing program or create new one
+            if (programId) {
+                const existingProgram = storage.getProgram(programId);
+                if (existingProgram) {
+                    loadProgramData(existingProgram);
+                } else {
+                    // New program - initialize empty days
+                    initializeWorkoutDays();
+                }
+            } else {
+                // Generate new ID if not provided
+                programId = generateUUID();
+                initializeWorkoutDays();
+            }
+
+            // Auto-save every 30 seconds
+            setInterval(() => {
+                saveProgram();
+            }, 30000);
+        });
+
+        // Save before leaving
+        window.addEventListener('beforeunload', () => {
+            saveProgram();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Training Program</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: var(--background-color, #f5f5f5);
+            color: var(--text-primary, #333);
+        }
+        .container {
+            background-color: var(--card-background, white);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow, 0 2px 10px rgba(0,0,0,0.1));
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            text-decoration: underline;
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .cycle-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .cycle-info div {
+            font-weight: bold;
+        }
+        .week-info {
+            display: grid;
+            grid-template-columns: auto auto auto auto auto auto;
+            gap: 1px;
+            background-color: var(--border-dark, #000);
+            border: 2px solid var(--border-dark, #000);
+            margin-bottom: 20px;
+        }
+        .week-info > div {
+            background-color: var(--card-background, white);
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .week-info input {
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-weight: bold;
+            width: 100%;
+            padding: 4px;
+        }
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid var(--border-dark, #000);
+        }
+        .schedule-table th,
+        .schedule-table td {
+            border: 1px solid var(--border-dark, #000);
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .schedule-table th {
+            background-color: var(--border-color, #f0f0f0);
+            font-weight: bold;
+        }
+        .date-cell {
+            width: 60px;
+        }
+        .day-cell {
+            width: 60px;
+        }
+        .session-cell {
+            width: 30px;
+        }
+        .time-cell {
+            width: 80px;
+        }
+        .training-cell {
+            width: 200px;
+        }
+        .comments-cell {
+            width: 250px;
+        }
+        .minutes-cell {
+            width: 60px;
+        }
+        input, textarea {
+            border: none;
+            background: transparent;
+            width: 100%;
+            padding: 2px;
+            text-align: center;
+            resize: none;
+            font-family: inherit;
+            font-size: inherit;
+            color: var(--text-primary, #333);
+        }
+        textarea {
+            min-height: 40px;
+        }
+        .notes-section {
+            margin-top: 20px;
+            border: 2px solid var(--border-dark, #000);
+            padding: 15px;
+        }
+        .notes-section h3 {
+            margin-top: 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .notes-section textarea {
+            width: 100%;
+            min-height: 60px;
+            border: 1px solid var(--border-color, #ccc);
+            padding: 8px;
+            text-align: left;
+            background-color: var(--card-background, white);
+            color: var(--text-primary, #333);
+        }
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #218838;
+        }
+        .btn-secondary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #0056b3;
+        }
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid #28a745;
+            color: #28a745;
+        }
+        .btn-outline:hover {
+            background-color: #28a745;
+            color: white;
+        }
+        @media print {
+            body {
+                margin: 0;
+                background-color: white;
+            }
+            .action-bar {
+                display: none;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Back to Dashboard</button>
+            <button class="btn btn-primary" onclick="saveProgram()">Save Program</button>
+            <button class="btn btn-outline" onclick="exportToImage()">Export as Image</button>
+            <button class="btn btn-outline" onclick="window.print()">Print</button>
+        </div>
+
+        <div class="header">
+            <h1>DOCTOR'S PRESCRIPTION PROGRAM</h1>
+        </div>
+        
+        <div class="cycle-info">
+            <div>
+                <strong>Macro-Cycle</strong> <input type="text" placeholder="Prep" style="width: 100px;">
+            </div>
+            <div>
+                <strong>Meso-Cycle</strong> <input type="text" placeholder="Spec Prep" style="width: 100px;">
+            </div>
+        </div>
+        
+        <div class="week-info">
+            <div><strong>Week #</strong></div>
+            <div><input type="number" placeholder="17"></div>
+            <div><strong>From</strong></div>
+            <div><input type="date"></div>
+            <div><strong>Total minutes</strong></div>
+            <div><input type="number" placeholder="910"></div>
+            
+            <div></div>
+            <div></div>
+            <div><strong>To</strong></div>
+            <div><input type="date"></div>
+            <div><strong>Total hours</strong></div>
+            <div><input type="number" step="0.1" placeholder="15.2"></div>
+        </div>
+        
+        <table class="schedule-table">
+            <thead>
+                <tr>
+                    <th class="date-cell">Date</th>
+                    <th class="day-cell">Day</th>
+                    <th class="session-cell">#</th>
+                    <th class="time-cell">Start</th>
+                    <th class="training-cell">Training Model</th>
+                    <th class="comments-cell">Comments / Objective</th>
+                    <th class="minutes-cell">Mins</th>
+                </tr>
+            </thead>
+            <tbody>
+                 <!-- Monday -->
+                <tr>
+                    <td class="date-cell" rowspan="2"><input type="date"></td>
+                    <td class="day-cell" rowspan="2"><input type="text" placeholder="Monday"></td>
+                    <td class="session-cell"><input type="number" placeholder="1"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="C4 Primary Session"></td>
+                    <td class="comments-cell"><textarea placeholder="40//20s, 4x2k, island loops, etc."></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td class="session-cell"><input type="number" placeholder="2"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="Hydro Hill"></td>
+                    <td class="comments-cell"><textarea placeholder="60' Hill Repeats"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="60"></td>
+                </tr>
+                
+                <!-- Tuesday -->
+                <tr>
+                    <td class="date-cell" rowspan="2"><input type="date"></td>
+                    <td class="day-cell" rowspan="2"><input type="text" placeholder="Tuesday"></td>
+                    <td class="session-cell"><input type="number" placeholder="1"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="Long C6"></td>
+                    <td class="comments-cell"><textarea placeholder="2-3x6k, 2x8k, 2x45', etc. w/ some tech work"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td class="session-cell"><input type="number" placeholder="2"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="Strength"></td>
+                    <td class="comments-cell"><textarea placeholder="Tuesday BSPC Program"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="60"></td>
+                </tr>
+                
+                <!-- Wednesday -->
+                <tr>
+                    <td class="date-cell" rowspan="2"><input type="date"></td>
+                    <td class="day-cell" rowspan="2"><input type="text" placeholder="Wednesday"></td>
+                    <td class="session-cell"><input type="number" placeholder="1"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="Spine Health and Hip Mobility"></td>
+                    <td class="comments-cell"><textarea placeholder="BSPC Program"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="30"></td>
+                </tr>
+                <tr>
+                    <td class="session-cell"><input type="number" placeholder="2"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="OFF"></td>
+                    <td class="comments-cell"><textarea placeholder="OFF"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+                
+                <!-- Thursday -->
+                <tr>
+                    <td class="date-cell" rowspan="2"><input type="date"></td>
+                    <td class="day-cell" rowspan="2"><input type="text" placeholder="Thursday"></td>
+                    <td class="session-cell"><input type="number" placeholder="1"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="C5 Medium Duration"></td>
+                    <td class="comments-cell"><textarea placeholder="3x4k, Island loops (3x), 3x20', 2x30', ect."></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td class="session-cell"><input type="number" placeholder="2"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="Strength"></td>
+                    <td class="comments-cell"><textarea placeholder="Thursday BSPC Program"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="60"></td>
+                </tr>
+                
+                <!-- Friday -->
+                <tr>
+                    <td class="date-cell" rowspan="2"><input type="date"></td>
+                    <td class="day-cell" rowspan="2"><input type="text" placeholder="Friday"></td>
+                    <td class="session-cell"><input type="number" placeholder="1"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="C6 Steady"></td>
+                    <td class="comments-cell"><textarea placeholder="Some rolling drills, mostly continuous 18-20"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td class="session-cell"><input type="number" placeholder="2"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="Strength"></td>
+                    <td class="comments-cell"><textarea placeholder="Friday BSPC Program (might have to do older workout)"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="60"></td>
+                </tr>
+                
+                <!-- Saturday -->
+                <tr>
+                    <td class="date-cell" rowspan="2"><input type="date"></td>
+                    <td class="day-cell" rowspan="2"><input type="text" placeholder="Saturday"></td>
+                    <td class="session-cell"><input type="number" placeholder="1"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="C2/1"></td>
+                    <td class="comments-cell"><textarea placeholder="4x750, Omnium, 2x1500, 6-8x500, etc."></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td class="session-cell"><input type="number" placeholder="2"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="C6 XT"></td>
+                    <td class="comments-cell"><textarea placeholder="Adjust volume based on weekly targets; cut if necessary"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+                
+                <!-- Sunday -->
+                <tr>
+                    <td class="date-cell" rowspan="2"><input type="date"></td>
+                    <td class="day-cell" rowspan="2"><input type="text" placeholder="Sunday"></td>
+                    <td class="session-cell"><input type="number" placeholder="1"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="Trail Run"></td>
+                    <td class="comments-cell"><textarea placeholder="Trip n Fall"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+                <tr>
+                    <td class="session-cell"><input type="number" placeholder="2"></td>
+                    <td class="time-cell"><input type="time"></td>
+                    <td class="training-cell"><input type="text" placeholder="C6 Row/Tech"></td>
+                    <td class="comments-cell"><textarea placeholder="Technical; low load. Adjust volume to fit weekly goal"></textarea></td>
+                    <td class="minutes-cell"><input type="number" placeholder="0"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        
+        <div class="notes-section">
+            <h3>NOTES</h3>
+            <textarea placeholder="Notes, technical focus, and other shenanigan text"></textarea>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="scripts/utils.js"></script>
+    <script src="scripts/storage.js"></script>
+    <script>
+        let programId = null;
+
+        function showMessage(text) {
+            // Create message element if it doesn't exist
+            const msg = document.createElement('div');
+            msg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 4px; z-index: 1000; font-family: Arial, sans-serif;';
+            msg.textContent = text;
+            document.body.appendChild(msg);
+            setTimeout(() => {
+                document.body.removeChild(msg);
+            }, 3000);
+        }
+
+        function exportToImage() {
+            showMessage('Generating image...');
+
+            const container = document.querySelector('.container');
+            const actionBar = document.querySelector('.action-bar');
+
+            // Hide action bar during export
+            actionBar.style.display = 'none';
+
+            html2canvas(container, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true,
+                allowTaint: false,
+                width: container.scrollWidth,
+                height: container.scrollHeight
+            }).then(canvas => {
+                // Show action bar again
+                actionBar.style.display = 'flex';
+
+                // Create download link
+                const link = document.createElement('a');
+                const programName = document.querySelector('input[placeholder="17"]')?.value || 'program';
+                link.download = 'training-week-' + programName + '-' + new Date().toISOString().split('T')[0] + '.png';
+                link.href = canvas.toDataURL('image/png');
+
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showMessage('Image exported successfully!');
+            }).catch(error => {
+                console.error('Export failed:', error);
+                actionBar.style.display = 'flex';
+                showMessage('Export failed. Please try again.');
+            });
+        }
+        
+        function calculateTotals() {
+            // Get all minute input fields
+            const minuteInputs = document.querySelectorAll('.minutes-cell input[type="number"]');
+            let totalMinutes = 0;
+            
+            // Sum all the minutes
+            minuteInputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                totalMinutes += value;
+            });
+            
+            // Update total minutes field
+            const totalMinutesInput = document.querySelector('input[placeholder="910"]');
+            if (totalMinutesInput) {
+                totalMinutesInput.value = totalMinutes;
+            }
+            
+            // Calculate and update total hours
+            const totalHours = (totalMinutes / 60).toFixed(1);
+            const totalHoursInput = document.querySelector('input[placeholder="15.2"]');
+            if (totalHoursInput) {
+                totalHoursInput.value = totalHours;
+            }
+        }
+        
+        // Listen for changes in minute input fields
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('.minutes-cell input[type="number"]')) {
+                calculateTotals();
+            }
+        });
+        
+        // Auto-resize textareas
+        document.querySelectorAll('textarea').forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = this.scrollHeight + 'px';
+            });
+        });
+
+        function getProgramData() {
+            // Collect all program data
+            const rows = document.querySelectorAll('.schedule-table tbody tr');
+            const sessions = [];
+
+            rows.forEach((row, index) => {
+                const dayIndex = Math.floor(index / 2);
+                const sessionNumber = (index % 2) + 1;
+
+                const dateCell = sessionNumber === 1 ? row.querySelector('.date-cell input') : null;
+                const dayCell = sessionNumber === 1 ? row.querySelector('.day-cell input') : null;
+
+                sessions.push({
+                    day: dayCell ? dayCell.value : '',
+                    date: dateCell ? dateCell.value : '',
+                    session: row.querySelector('.session-cell input')?.value || '',
+                    time: row.querySelector('.time-cell input')?.value || '',
+                    trainingModel: row.querySelector('.training-cell input')?.value || '',
+                    comments: row.querySelector('.comments-cell textarea')?.value || '',
+                    minutes: row.querySelector('.minutes-cell input')?.value || ''
+                });
+            });
+
+            const macroCycle = document.querySelector('.cycle-info input[placeholder="Prep"]')?.value || '';
+            const mesoCycle = document.querySelector('.cycle-info input[placeholder="Spec Prep"]')?.value || '';
+
+            return {
+                id: programId,
+                type: 'general',
+                name: 'Weekly Training Program - Week ' + (document.querySelector('input[placeholder="17"]')?.value || 'N/A'),
+                macroCycle: macroCycle,
+                mesoCycle: mesoCycle,
+                weekNumber: document.querySelector('input[placeholder="17"]')?.value || '',
+                startDate: document.querySelectorAll('.week-info input[type="date"]')[0]?.value || '',
+                endDate: document.querySelectorAll('.week-info input[type="date"]')[1]?.value || '',
+                totalMinutes: document.querySelector('input[placeholder="910"]')?.value || '',
+                totalHours: document.querySelector('input[placeholder="15.2"]')?.value || '',
+                notes: document.querySelector('.notes-section textarea')?.value || '',
+                sessions: sessions
+            };
+        }
+
+        function loadProgramData(data) {
+            if (!data) return;
+
+            // Load metadata
+            if (data.macroCycle) {
+                const macroCycleInput = document.querySelector('.cycle-info input[placeholder="Prep"]');
+                if (macroCycleInput) macroCycleInput.value = data.macroCycle;
+            }
+
+            if (data.mesoCycle) {
+                const mesoCycleInput = document.querySelector('.cycle-info input[placeholder="Spec Prep"]');
+                if (mesoCycleInput) mesoCycleInput.value = data.mesoCycle;
+            }
+
+            if (data.weekNumber) {
+                const weekInput = document.querySelector('input[placeholder="17"]');
+                if (weekInput) weekInput.value = data.weekNumber;
+            }
+
+            const dateInputs = document.querySelectorAll('.week-info input[type="date"]');
+            if (data.startDate && dateInputs[0]) dateInputs[0].value = data.startDate;
+            if (data.endDate && dateInputs[1]) dateInputs[1].value = data.endDate;
+
+            if (data.totalMinutes) {
+                const totalMinInput = document.querySelector('input[placeholder="910"]');
+                if (totalMinInput) totalMinInput.value = data.totalMinutes;
+            }
+
+            if (data.totalHours) {
+                const totalHoursInput = document.querySelector('input[placeholder="15.2"]');
+                if (totalHoursInput) totalHoursInput.value = data.totalHours;
+            }
+
+            if (data.notes) {
+                const notesTextarea = document.querySelector('.notes-section textarea');
+                if (notesTextarea) notesTextarea.value = data.notes;
+            }
+
+            // Load session data
+            if (data.sessions) {
+                const rows = document.querySelectorAll('.schedule-table tbody tr');
+                data.sessions.forEach((session, index) => {
+                    if (rows[index]) {
+                        const row = rows[index];
+                        const sessionNumber = (index % 2) + 1;
+
+                        if (sessionNumber === 1 && session.date) {
+                            const dateInput = row.querySelector('.date-cell input');
+                            if (dateInput) dateInput.value = session.date;
+                        }
+
+                        const sessionInput = row.querySelector('.session-cell input');
+                        if (sessionInput && session.session) sessionInput.value = session.session;
+
+                        const timeInput = row.querySelector('.time-cell input');
+                        if (timeInput && session.time) timeInput.value = session.time;
+
+                        const trainingInput = row.querySelector('.training-cell input');
+                        if (trainingInput && session.trainingModel) trainingInput.value = session.trainingModel;
+
+                        const commentsTextarea = row.querySelector('.comments-cell textarea');
+                        if (commentsTextarea && session.comments) commentsTextarea.value = session.comments;
+
+                        const minutesInput = row.querySelector('.minutes-cell input');
+                        if (minutesInput && session.minutes) minutesInput.value = session.minutes;
+                    }
+                });
+
+                calculateTotals();
+            }
+        }
+
+        function saveProgram() {
+            const data = getProgramData();
+            const success = storage.saveProgram(data);
+
+            if (success) {
+                showToast('Program saved successfully!', 'success');
+            } else {
+                showToast('Failed to save program', 'error');
+            }
+        }
+
+        // Initial calculation and data load on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get program ID from URL
+            programId = getQueryParam('id');
+
+            // Load existing program if ID is provided
+            if (programId) {
+                const existingProgram = storage.getProgram(programId);
+                if (existingProgram) {
+                    loadProgramData(existingProgram);
+                }
+            } else {
+                // Generate new ID
+                programId = generateUUID();
+            }
+
+            calculateTotals();
+
+            // Auto-save every 30 seconds
+            setInterval(() => {
+                saveProgram();
+            }, 30000);
+        });
+
+        // Save before leaving
+        window.addEventListener('beforeunload', () => {
+            saveProgram();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training History</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <style>
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .controls {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .controls-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding-right: 40px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--border-color);
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .stats-bar {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            text-align: center;
+        }
+
+        .stat-item {
+            padding: 10px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .program-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .program-card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            transition: var(--transition);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .program-card:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .program-info h3 {
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .program-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+
+        .type-strength {
+            background-color: #fce4ec;
+            color: #c2185b;
+        }
+
+        .type-general {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .program-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .program-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .program-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .bulk-actions {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--card-background);
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-hover);
+            display: none;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .bulk-actions.visible {
+            display: flex;
+        }
+
+        @media (max-width: 768px) {
+            .controls-row {
+                grid-template-columns: 1fr;
+            }
+
+            .program-card {
+                grid-template-columns: 1fr;
+            }
+
+            .program-actions {
+                flex-direction: row;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-wide">
+        <div class="header">
+            <h1>Training History</h1>
+            <div class="btn-group">
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Back to Dashboard</button>
+                <button class="btn btn-primary" onclick="exportAllData()">Export All Data</button>
+                <button class="btn btn-outline" onclick="importData()">Import Data</button>
+            </div>
+        </div>
+
+        <div class="stats-bar" id="statsBar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalPrograms">0</div>
+                <div class="stat-label">Total Programs</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="strengthPrograms">0</div>
+                <div class="stat-label">Strength</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="weeklyPrograms">0</div>
+                <div class="stat-label">Weekly</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalHours">0h</div>
+                <div class="stat-label">Total Hours</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="controls-row">
+                <div class="search-box">
+                    <label>Search Programs</label>
+                    <input type="text" id="searchInput" placeholder="Search by name, notes, or type..." oninput="filterPrograms()">
+                </div>
+                <div>
+                    <label>Sort By</label>
+                    <select id="sortSelect" onchange="filterPrograms()">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="type">Type</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+                <button class="filter-btn" data-filter="strength" onclick="setFilter('strength')">Strength</button>
+                <button class="filter-btn" data-filter="general" onclick="setFilter('general')">Weekly</button>
+            </div>
+        </div>
+
+        <div class="program-grid" id="programGrid">
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <h2>No programs found</h2>
+                <p>Create your first training program to get started!</p>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+
+    <script src="scripts/utils.js"></script>
+    <script src="scripts/storage.js"></script>
+    <script>
+        let currentFilter = 'all';
+        let allPrograms = [];
+
+        function loadPrograms() {
+            allPrograms = storage.getAllPrograms();
+            updateStats();
+            filterPrograms();
+        }
+
+        function updateStats() {
+            const stats = storage.getStats();
+
+            document.getElementById('totalPrograms').textContent = stats.totalPrograms;
+            document.getElementById('strengthPrograms').textContent = stats.byType.strength || 0;
+            document.getElementById('weeklyPrograms').textContent = stats.byType.general || 0;
+            document.getElementById('totalHours').textContent = stats.totalHours.toFixed(1) + 'h';
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+
+            filterPrograms();
+        }
+
+        function filterPrograms() {
+            let programs = [...allPrograms];
+
+            // Apply type filter
+            if (currentFilter !== 'all') {
+                programs = programs.filter(p => p.type === currentFilter);
+            }
+
+            // Apply search
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                programs = programs.filter(p => {
+                    const name = (p.name || '').toLowerCase();
+                    const type = (p.type || '').toLowerCase();
+                    const notes = (p.notes || '').toLowerCase();
+                    return name.includes(searchTerm) || type.includes(searchTerm) || notes.includes(searchTerm);
+                });
+            }
+
+            // Apply sort
+            const sortBy = document.getElementById('sortSelect').value;
+            programs.sort((a, b) => {
+                switch (sortBy) {
+                    case 'newest':
+                        return b.lastModified - a.lastModified;
+                    case 'oldest':
+                        return a.lastModified - b.lastModified;
+                    case 'name':
+                        return (a.name || '').localeCompare(b.name || '');
+                    case 'type':
+                        return (a.type || '').localeCompare(b.type || '');
+                    default:
+                        return 0;
+                }
+            });
+
+            renderPrograms(programs);
+        }
+
+        function renderPrograms(programs) {
+            const grid = document.getElementById('programGrid');
+
+            if (programs.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h2>No programs found</h2>
+                        <p>Try adjusting your search or filters.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = programs.map(program => {
+                const type = program.type || 'general';
+                const typeClass = `type-${type}`;
+
+                return `
+                    <div class="program-card">
+                        <div class="program-info">
+                            <h3>${sanitizeHTML(program.name || 'Untitled Program')}</h3>
+                            <div>
+                                <span class="program-type ${typeClass}">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                                ${program.weekNumber ? `<span class="program-type" style="background: #e0e0e0; color: #333;">Week ${program.weekNumber}</span>` : ''}
+                            </div>
+                            <div class="program-meta">
+                                <span>📅 ${formatDateReadable(program.lastModified)}</span>
+                                ${program.totalHours ? `<span>⏱️ ${program.totalHours}h</span>` : ''}
+                                ${program.startDate ? `<span>📍 ${formatDateReadable(program.startDate)}</span>` : ''}
+                            </div>
+                            ${program.notes ? `<p style="margin-top: 10px; color: var(--text-secondary); font-size: 0.9rem;">${sanitizeHTML(program.notes.substring(0, 150))}${program.notes.length > 150 ? '...' : ''}</p>` : ''}
+                        </div>
+                        <div class="program-actions">
+                            <button class="btn btn-small btn-primary" onclick="openProgram('${program.id}', '${program.type}')">
+                                Open
+                            </button>
+                            <button class="btn btn-small btn-outline" onclick="duplicateProgram('${program.id}')">
+                                Duplicate
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteProgram('${program.id}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openProgram(id, type) {
+            const page = type === 'strength' ? 'strength-template.html' :
+                        'weekly_training_program_template.html';
+            window.location.href = `${page}?id=${id}`;
+        }
+
+        async function deleteProgram(id) {
+            const confirmed = await showConfirm('Are you sure you want to delete this program? This action cannot be undone.');
+
+            if (confirmed) {
+                storage.deleteProgram(id);
+                showToast('Program deleted successfully', 'success');
+                loadPrograms();
+            }
+        }
+
+        function duplicateProgram(id) {
+            const duplicate = storage.duplicateProgram(id);
+
+            if (duplicate) {
+                showToast('Program duplicated successfully', 'success');
+                loadPrograms();
+            } else {
+                showToast('Failed to duplicate program', 'error');
+            }
+        }
+
+        function exportAllData() {
+            const data = storage.exportAll();
+            downloadFile(data, `training-programs-export-${formatDate(new Date())}.json`, 'application/json');
+            showToast('Data exported successfully', 'success');
+        }
+
+        function importData() {
+            document.getElementById('importFileInput').click();
+        }
+
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const result = storage.importPrograms(e.target.result, true);
+
+                    if (result.success) {
+                        showToast(`Successfully imported ${result.count} programs`, 'success');
+                        loadPrograms();
+                    } else {
+                        showToast(result.message, 'error');
+                    }
+                } catch (error) {
+                    showToast('Import failed: Invalid file format', 'error');
+                }
+            };
+
+            reader.readAsText(file);
+
+            // Reset input
+            event.target.value = '';
+        }
+
+        async function clearAllData() {
+            const confirmed = await showConfirm('Are you sure you want to delete ALL programs? This action cannot be undone!');
+
+            if (confirmed) {
+                const doubleConfirm = await showConfirm('This will permanently delete all your training data. Are you absolutely sure?');
+
+                if (doubleConfirm) {
+                    storage.clearAllPrograms();
+                    showToast('All data cleared', 'success');
+                    loadPrograms();
+                }
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPrograms();
+        });
+    </script>
+</body>
+</html>
