@@ -185,7 +185,7 @@
     <div class="container">
         <div class="action-bar">
             <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Back to Dashboard</button>
-            <button class="btn btn-primary" onclick="saveProgram()">Save Program</button>
+            <button class="btn btn-primary" onclick="saveProgram(true)">Save Program</button>
             <button class="btn btn-outline" onclick="exportToImage()">Export as Image</button>
             <button class="btn btn-outline" onclick="window.print()">Print</button>
         </div>
@@ -577,14 +577,16 @@
             }
         }
 
-        function saveProgram() {
+        function saveProgram(showNotification = false) {
             const data = getProgramData();
             const success = storage.saveProgram(data);
 
-            if (success) {
-                showToast('Program saved successfully!', 'success');
-            } else {
-                showToast('Failed to save program', 'error');
+            if (showNotification) {
+                if (success) {
+                    showToast('Program saved successfully!', 'success');
+                } else {
+                    showToast('Failed to save program', 'error');
+                }
             }
         }
 
