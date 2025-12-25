@@ -145,11 +145,48 @@
             margin-top: 20px;
         }
 
+        .exercise-group {
+            background-color: var(--card-background);
+            border: 2px dashed var(--primary-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .group-name {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1rem;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--card-background);
+        }
+
+        .group-exercises {
+            display: grid;
+            gap: 10px;
+        }
+
         @media print {
             .action-bar,
             .add-exercise-btn,
-            .remove-exercise-btn {
+            .remove-exercise-btn,
+            .group-header button {
                 display: none !important;
+            }
+
+            .exercise-group {
+                border-style: solid;
             }
         }
     </style>
@@ -204,7 +241,7 @@
     <script src="scripts/utils.js"></script>
     <script src="scripts/storage.js"></script>
     <script>
-        const WORKOUT_DAYS = ['Monday', 'Tuesday', 'Thursday', 'Friday'];
+        const WORKOUT_DAYS = ['Tuesday', 'Thursday', 'Friday'];
         let programId = null;
 
         function createExerciseHTML(exerciseData = {}) {
@@ -230,10 +267,6 @@
                             <input type="text" class="weight-input" placeholder="70%" value="${exerciseData.weight || ''}">
                         </div>
                         <div class="detail-field">
-                            <label>Rest (sec)</label>
-                            <input type="text" class="rest-input" placeholder="90-120" value="${exerciseData.rest || ''}">
-                        </div>
-                        <div class="detail-field">
                             <label>Tempo</label>
                             <input type="text" class="tempo-input" placeholder="3-1-1-0" value="${exerciseData.tempo || ''}">
                         </div>
@@ -246,8 +279,49 @@
             `;
         }
 
-        function createDayCard(day, exercises = []) {
+        function createGroupHTML(groupData = {}) {
+            const groupId = groupData.id || generateUUID();
+            const exercises = groupData.exercises || [];
+
+            return `
+                <div class="exercise-group" data-group-id="${groupId}">
+                    <div class="group-header">
+                        <input type="text" class="group-name" placeholder="Superset A" value="${groupData.name || ''}">
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-small btn-outline" onclick="addExerciseToGroup('${groupId}')">+ Add Exercise</button>
+                            <button class="remove-exercise-btn" onclick="removeGroup('${groupId}')">Delete Group</button>
+                        </div>
+                    </div>
+                    <div class="group-exercises" id="group-exercises-${groupId}">
+                        ${exercises.map(ex => createExerciseHTML(ex)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function createDayCard(day, items = []) {
             const dayId = day.toLowerCase().replace(' ', '-');
+
+            // Count total exercises (individual + grouped)
+            let exerciseCount = 0;
+            items.forEach(item => {
+                if (item.type === 'exercise' || !item.type) {
+                    // Handle both new format and old format (no type = old exercise)
+                    exerciseCount++;
+                } else if (item.type === 'group') {
+                    exerciseCount += (item.exercises?.length || 0);
+                }
+            });
+
+            // Render items (mix of exercises and groups)
+            const itemsHTML = items.map(item => {
+                if (item.type === 'group') {
+                    return createGroupHTML(item);
+                } else {
+                    // Backwards compatibility: handle old format or type === 'exercise'
+                    return createExerciseHTML(item);
+                }
+            }).join('');
 
             return `
                 <div class="day-card" data-day="${day}">
@@ -256,16 +330,21 @@
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="date" class="day-date" style="width: auto;" placeholder="Date">
                             <span style="color: var(--text-secondary); font-size: 0.9rem;">
-                                <span class="exercise-count">${exercises.length}</span> exercises
+                                <span class="exercise-count">${exerciseCount}</span> exercises
                             </span>
                         </div>
                     </div>
                     <div class="exercise-list" id="exercises-${dayId}">
-                        ${exercises.map(ex => createExerciseHTML(ex)).join('')}
+                        ${itemsHTML}
                     </div>
-                    <button class="btn btn-small btn-primary add-exercise-btn" onclick="addExercise('${dayId}')">
-                        + Add Exercise
-                    </button>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn btn-small btn-primary add-exercise-btn" onclick="addExercise('${dayId}')">
+                            + Add Exercise
+                        </button>
+                        <button class="btn btn-small btn-secondary" onclick="addGroup('${dayId}')">
+                            + Create Group
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -276,13 +355,22 @@
 
             WORKOUT_DAYS.forEach(day => {
                 const dayId = day.toLowerCase().replace(' ', '-');
-                let exercises = [];
+                let items = [];
 
                 if (programData && programData.days && programData.days[day]) {
-                    exercises = programData.days[day].exercises || [];
+                    // Check for new format (items) or old format (exercises)
+                    if (programData.days[day].items) {
+                        items = programData.days[day].items;
+                    } else if (programData.days[day].exercises) {
+                        // Backwards compatibility: convert old exercises to items format
+                        items = programData.days[day].exercises.map(ex => ({
+                            type: 'exercise',
+                            ...ex
+                        }));
+                    }
                 }
 
-                container.innerHTML += createDayCard(day, exercises);
+                container.innerHTML += createDayCard(day, items);
 
                 // Set date if available
                 if (programData && programData.days && programData.days[day] && programData.days[day].date) {
@@ -317,8 +405,41 @@
 
         function updateExerciseCount(dayId) {
             const dayCard = document.querySelector(`#exercises-${dayId}`).closest('.day-card');
-            const count = dayCard.querySelectorAll('.exercise-item').length;
+            const individualExercises = dayCard.querySelectorAll('.exercise-list > .exercise-item').length;
+            const groupExercises = dayCard.querySelectorAll('.exercise-group .exercise-item').length;
+            const count = individualExercises + groupExercises;
             dayCard.querySelector('.exercise-count').textContent = count;
+        }
+
+        function addGroup(dayId) {
+            const exerciseList = document.getElementById(`exercises-${dayId}`);
+            exerciseList.insertAdjacentHTML('beforeend', createGroupHTML());
+            updateExerciseCount(dayId);
+        }
+
+        function removeGroup(groupId) {
+            const group = document.querySelector(`[data-group-id="${groupId}"]`);
+            if (group) {
+                const dayCard = group.closest('.day-card');
+                group.remove();
+                if (dayCard) {
+                    const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
+                    updateExerciseCount(dayId);
+                }
+            }
+        }
+
+        function addExerciseToGroup(groupId) {
+            const groupExercises = document.getElementById(`group-exercises-${groupId}`);
+            groupExercises.insertAdjacentHTML('beforeend', createExerciseHTML());
+            const group = document.querySelector(`[data-group-id="${groupId}"]`);
+            if (group) {
+                const dayCard = group.closest('.day-card');
+                if (dayCard) {
+                    const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
+                    updateExerciseCount(dayId);
+                }
+            }
         }
 
         function getProgramData() {
@@ -327,23 +448,55 @@
             document.querySelectorAll('.day-card').forEach(dayCard => {
                 const dayName = dayCard.getAttribute('data-day');
                 const dayDate = dayCard.querySelector('.day-date').value;
-                const exercises = [];
+                const items = [];
 
-                dayCard.querySelectorAll('.exercise-item').forEach(exercise => {
-                    exercises.push({
-                        name: exercise.querySelector('.exercise-name').value,
-                        sets: exercise.querySelector('.sets-input').value,
-                        reps: exercise.querySelector('.reps-input').value,
-                        weight: exercise.querySelector('.weight-input').value,
-                        rest: exercise.querySelector('.rest-input').value,
-                        tempo: exercise.querySelector('.tempo-input').value,
-                        notes: exercise.querySelector('.notes-input').value
-                    });
+                const exerciseList = dayCard.querySelector('.exercise-list');
+
+                // Process all children (both individual exercises and groups)
+                exerciseList.childNodes.forEach(node => {
+                    if (node.nodeType === 1) { // Element node
+                        if (node.classList?.contains('exercise-item')) {
+                            // Individual exercise
+                            items.push({
+                                type: 'exercise',
+                                id: node.getAttribute('data-exercise-id'),
+                                name: node.querySelector('.exercise-name').value,
+                                sets: node.querySelector('.sets-input').value,
+                                reps: node.querySelector('.reps-input').value,
+                                weight: node.querySelector('.weight-input').value,
+                                tempo: node.querySelector('.tempo-input').value,
+                                notes: node.querySelector('.notes-input').value
+                            });
+                        } else if (node.classList?.contains('exercise-group')) {
+                            // Exercise group
+                            const groupId = node.getAttribute('data-group-id');
+                            const exercises = [];
+
+                            node.querySelectorAll('.exercise-item').forEach(exercise => {
+                                exercises.push({
+                                    id: exercise.getAttribute('data-exercise-id'),
+                                    name: exercise.querySelector('.exercise-name').value,
+                                    sets: exercise.querySelector('.sets-input').value,
+                                    reps: exercise.querySelector('.reps-input').value,
+                                    weight: exercise.querySelector('.weight-input').value,
+                                    tempo: exercise.querySelector('.tempo-input').value,
+                                    notes: exercise.querySelector('.notes-input').value
+                                });
+                            });
+
+                            items.push({
+                                type: 'group',
+                                id: groupId,
+                                name: node.querySelector('.group-name').value,
+                                exercises: exercises
+                            });
+                        }
+                    }
                 });
 
                 days[dayName] = {
                     date: dayDate,
-                    exercises: exercises
+                    items: items
                 };
             });
 
