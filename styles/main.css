@@ -1,7 +1,7 @@
 /* CSS Variables */
 :root {
-  --primary-color: #28a745;
-  --primary-hover: #218838;
+  --primary-color: #d97e22;
+  --primary-hover: #c46d1e;
   --secondary-color: #007bff;
   --danger-color: #dc3545;
   --danger-hover: #c82333;
@@ -19,8 +19,8 @@
 
 /* Dark Mode Variables */
 [data-theme="dark"] {
-  --primary-color: #2ecc71;
-  --primary-hover: #27ae60;
+  --primary-color: #f39c12;
+  --primary-hover: #e67e22;
   --secondary-color: #3498db;
   --danger-color: #e74c3c;
   --danger-hover: #c0392b;
@@ -199,7 +199,7 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+  box-shadow: 0 0 0 3px rgba(217, 126, 34, 0.1);
 }
 
 label {
