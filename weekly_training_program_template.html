@@ -60,6 +60,11 @@
             width: 100%;
             padding: 4px;
         }
+        .week-info input[readonly] {
+            background-color: rgba(0, 0, 0, 0.05);
+            cursor: not-allowed;
+            color: var(--text-secondary, #666);
+        }
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
@@ -80,10 +85,18 @@
             width: 60px;
         }
         .day-cell {
-            width: 60px;
+            width: 90px;
         }
         .session-cell {
-            width: 30px;
+            width: 50px;
+        }
+        .session-cell input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .session-cell input[type="number"]::-webkit-outer-spin-button,
+        .session-cell input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
         .time-cell {
             width: 80px;
@@ -96,6 +109,14 @@
         }
         .minutes-cell {
             width: 60px;
+        }
+        .minutes-cell input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .minutes-cell input[type="number"]::-webkit-outer-spin-button,
+        .minutes-cell input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
         input, textarea {
             border: none;
@@ -207,16 +228,16 @@
             <div><strong>Week #</strong></div>
             <div><input type="number" placeholder="17"></div>
             <div><strong>From</strong></div>
-            <div><input type="date"></div>
+            <div><input type="date" readonly></div>
             <div><strong>Total minutes</strong></div>
-            <div><input type="number" placeholder="910"></div>
-            
-            <div></div>
-            <div></div>
+            <div><input type="number" placeholder="910" readonly></div>
+
+            <div><strong>Title</strong></div>
+            <div><input type="text" placeholder="e.g., Base Building Week" id="weekTitle"></div>
             <div><strong>To</strong></div>
-            <div><input type="date"></div>
+            <div><input type="date" readonly></div>
             <div><strong>Total hours</strong></div>
-            <div><input type="number" step="0.1" placeholder="15.2"></div>
+            <div><input type="number" step="0.1" placeholder="15.2" readonly></div>
         </div>
         
         <table class="schedule-table">
@@ -427,19 +448,19 @@
             // Get all minute input fields
             const minuteInputs = document.querySelectorAll('.minutes-cell input[type="number"]');
             let totalMinutes = 0;
-            
+
             // Sum all the minutes
             minuteInputs.forEach(input => {
                 const value = parseFloat(input.value) || 0;
                 totalMinutes += value;
             });
-            
+
             // Update total minutes field
             const totalMinutesInput = document.querySelector('input[placeholder="910"]');
             if (totalMinutesInput) {
                 totalMinutesInput.value = totalMinutes;
             }
-            
+
             // Calculate and update total hours
             const totalHours = (totalMinutes / 60).toFixed(1);
             const totalHoursInput = document.querySelector('input[placeholder="15.2"]');
@@ -447,11 +468,49 @@
                 totalHoursInput.value = totalHours;
             }
         }
+
+        function updateDateRange() {
+            // Get all date inputs from the schedule table
+            const dateInputs = document.querySelectorAll('.date-cell input[type="date"]');
+            const dates = [];
+
+            // Collect all non-empty dates
+            dateInputs.forEach(input => {
+                if (input.value) {
+                    dates.push(input.value);
+                }
+            });
+
+            // Update From and To fields
+            const weekInfoDates = document.querySelectorAll('.week-info input[type="date"]');
+
+            if (dates.length > 0) {
+                // Sort dates to find first and last
+                dates.sort();
+
+                // Update From date (first date)
+                if (weekInfoDates[0]) {
+                    weekInfoDates[0].value = dates[0];
+                }
+
+                // Update To date (last date)
+                if (weekInfoDates[1]) {
+                    weekInfoDates[1].value = dates[dates.length - 1];
+                }
+            } else {
+                // Clear if no dates
+                if (weekInfoDates[0]) weekInfoDates[0].value = '';
+                if (weekInfoDates[1]) weekInfoDates[1].value = '';
+            }
+        }
         
-        // Listen for changes in minute input fields
+        // Listen for changes in minute input fields and date fields
         document.addEventListener('input', function(e) {
             if (e.target.matches('.minutes-cell input[type="number"]')) {
                 calculateTotals();
+            }
+            if (e.target.matches('.date-cell input[type="date"]')) {
+                updateDateRange();
             }
         });
         
@@ -496,6 +555,7 @@
                 macroCycle: macroCycle,
                 mesoCycle: mesoCycle,
                 weekNumber: document.querySelector('input[placeholder="17"]')?.value || '',
+                weekTitle: document.getElementById('weekTitle')?.value || '',
                 startDate: document.querySelectorAll('.week-info input[type="date"]')[0]?.value || '',
                 endDate: document.querySelectorAll('.week-info input[type="date"]')[1]?.value || '',
                 totalMinutes: document.querySelector('input[placeholder="910"]')?.value || '',
@@ -524,9 +584,12 @@
                 if (weekInput) weekInput.value = data.weekNumber;
             }
 
-            const dateInputs = document.querySelectorAll('.week-info input[type="date"]');
-            if (data.startDate && dateInputs[0]) dateInputs[0].value = data.startDate;
-            if (data.endDate && dateInputs[1]) dateInputs[1].value = data.endDate;
+            if (data.weekTitle) {
+                const weekTitleInput = document.getElementById('weekTitle');
+                if (weekTitleInput) weekTitleInput.value = data.weekTitle;
+            }
+
+            // Note: From and To dates are now auto-calculated from the table dates
 
             if (data.totalMinutes) {
                 const totalMinInput = document.querySelector('input[placeholder="910"]');
@@ -575,6 +638,9 @@
 
                 calculateTotals();
             }
+
+            // Update date range after loading data
+            updateDateRange();
         }
 
         function saveProgram(showNotification = false) {
@@ -607,6 +673,7 @@
             }
 
             calculateTotals();
+            updateDateRange();
 
             // Auto-save every 30 seconds
             setInterval(() => {
