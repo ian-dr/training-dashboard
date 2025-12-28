@@ -276,6 +276,9 @@
                         <button class="btn btn-small btn-primary" onclick="openProgram('${program.id}', '${program.type}')">
                             Open
                         </button>
+                        <button class="btn btn-small btn-secondary" onclick="copyProgram('${program.id}')">
+                            Duplicate
+                        </button>
                         <button class="btn btn-small btn-danger" onclick="deleteProgram('${program.id}')">
                             Delete
                         </button>
@@ -288,6 +291,17 @@
             const page = type === 'strength' ? 'strength-template.html' :
                         'weekly_training_program_template.html';
             window.location.href = `${page}?id=${id}`;
+        }
+
+        function copyProgram(id) {
+            const newProgram = storage.duplicateProgram(id);
+            if (newProgram) {
+                loadRecentPrograms();
+                updateStats();
+                showToast('Program duplicated successfully!', 'success');
+            } else {
+                showToast('Failed to duplicate program', 'error');
+            }
         }
 
         async function deleteProgram(id) {
