@@ -84,10 +84,17 @@
         }
 
         .exercise-header {
-            display: grid;
-            grid-template-columns: 1fr auto;
+            display: flex;
             gap: 10px;
             margin-bottom: 10px;
+            align-items: flex-start;
+        }
+
+        .exercise-name-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .exercise-name {
@@ -127,10 +134,14 @@
             background-color: var(--danger-color);
             color: white;
             border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
+            padding: 2px 12px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            width: fit-content;
+            height: auto;
+            line-height: 1.4;
         }
 
         .remove-exercise-btn:hover {
@@ -307,8 +318,10 @@
                 <div class="exercise-item" data-exercise-id="${exerciseId}">
                     <div class="exercise-header">
                         <span class="drag-handle" title="Drag to reorder">⋮⋮</span>
-                        <input type="text" class="exercise-name" placeholder="Exercise name..." value="${exerciseData.name || ''}">
-                        <button class="remove-exercise-btn" onclick="removeExercise('${exerciseId}')">Remove</button>
+                        <div class="exercise-name-container">
+                            <input type="text" class="exercise-name" placeholder="Exercise name..." value="${exerciseData.name || ''}">
+                            <button class="remove-exercise-btn" onclick="removeExercise('${exerciseId}')">Remove</button>
+                        </div>
                     </div>
                     <div class="exercise-details">
                         <div class="detail-field">
