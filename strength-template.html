@@ -847,30 +847,31 @@
         }
 
         function exportToImage() {
-            showLoading();
-
             const actionBar = document.querySelector('.action-bar');
             actionBar.style.display = 'none';
 
-            html2canvas(document.body, {
-                backgroundColor: '#f5f5f5',
-                scale: 2
-            }).then(canvas => {
-                const link = document.createElement('a');
-                const programName = document.getElementById('programName').value || 'strength-program';
-                link.download = `${programName}-${formatDate(new Date())}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+            // Wait for DOM to update before capturing
+            setTimeout(() => {
+                html2canvas(document.body, {
+                    backgroundColor: '#f5f5f5',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    const programName = document.getElementById('programName').value || 'strength-program';
+                    link.download = `${programName}-${formatDate(new Date())}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
 
-                actionBar.style.display = 'flex';
-                hideLoading();
-                showToast('Image exported successfully!', 'success');
-            }).catch(error => {
-                console.error('Export failed:', error);
-                actionBar.style.display = 'flex';
-                hideLoading();
-                showToast('Export failed', 'error');
-            });
+                    actionBar.style.display = 'flex';
+                    showToast('Image exported successfully!', 'success');
+                }).catch(error => {
+                    console.error('Export failed:', error);
+                    actionBar.style.display = 'flex';
+                    showToast('Export failed', 'error');
+                });
+            }, 100);
         }
 
         function printProgram() {
