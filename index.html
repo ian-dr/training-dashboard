@@ -110,6 +110,28 @@
         .program-actions {
             display: flex;
             gap: 10px;
+            align-items: center;
+        }
+
+        .status-select {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+            min-width: 90px;
+        }
+
+        .status-select:hover {
+            opacity: 0.9;
+        }
+
+        .status-select option {
+            background-color: white;
+            color: #333;
         }
 
         .empty-state {
@@ -265,7 +287,15 @@
                 .sort((a, b) => b.lastModified - a.lastModified)
                 .slice(0, 5);
 
-            recentProgramsDiv.innerHTML = recent.map(program => `
+            recentProgramsDiv.innerHTML = recent.map(program => {
+                const status = program.status || 'draft';
+                const statusColors = {
+                    draft: '#6c757d',
+                    active: '#28a745',
+                    complete: '#007bff'
+                };
+
+                return `
                 <div class="program-item">
                     <div class="program-info">
                         <h4>${sanitizeHTML(program.name || 'Untitled Program')}</h4>
@@ -276,6 +306,11 @@
                         </div>
                     </div>
                     <div class="program-actions">
+                        <select class="status-select" onchange="updateProgramStatus('${program.id}', this.value)" style="background-color: ${statusColors[status]};">
+                            <option value="draft" ${status === 'draft' ? 'selected' : ''}>Draft</option>
+                            <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="complete" ${status === 'complete' ? 'selected' : ''}>Complete</option>
+                        </select>
                         <button class="btn btn-small btn-primary" onclick="openProgram('${program.id}', '${program.type}')">
                             Open
                         </button>
@@ -287,7 +322,8 @@
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function openProgram(id, type) {
@@ -304,6 +340,16 @@
                 showToast('Program duplicated successfully!', 'success');
             } else {
                 showToast('Failed to duplicate program', 'error');
+            }
+        }
+
+        function updateProgramStatus(id, status) {
+            const program = storage.getProgram(id);
+            if (program) {
+                program.status = status;
+                storage.saveProgram(program);
+                loadRecentPrograms();
+                showToast('Status updated', 'success');
             }
         }
 
