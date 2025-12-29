@@ -614,15 +614,27 @@
 
             const macroCycle = document.querySelector('.cycle-info input[placeholder="Prep"]')?.value || '';
             const mesoCycle = document.querySelector('.cycle-info input[placeholder="Spec Prep"]')?.value || '';
+            const weekNumber = document.querySelector('input[placeholder="17"]')?.value || '';
+            const weekTitle = document.getElementById('weekTitle')?.value || '';
+
+            // Build program name with week number and title
+            let programName = 'Weekly Training Program';
+            if (weekNumber && weekTitle) {
+                programName = `Week ${weekNumber}: ${weekTitle}`;
+            } else if (weekNumber) {
+                programName = `Weekly Training Program - Week ${weekNumber}`;
+            } else if (weekTitle) {
+                programName = `Weekly Training Program - ${weekTitle}`;
+            }
 
             return {
                 id: programId,
                 type: 'general',
-                name: 'Weekly Training Program - Week ' + (document.querySelector('input[placeholder="17"]')?.value || 'N/A'),
+                name: programName,
                 macroCycle: macroCycle,
                 mesoCycle: mesoCycle,
-                weekNumber: document.querySelector('input[placeholder="17"]')?.value || '',
-                weekTitle: document.getElementById('weekTitle')?.value || '',
+                weekNumber: weekNumber,
+                weekTitle: weekTitle,
                 startDate: document.querySelectorAll('.week-info input[type="date"]')[0]?.value || '',
                 endDate: document.querySelectorAll('.week-info input[type="date"]')[1]?.value || '',
                 totalMinutes: document.querySelector('input[placeholder="910"]')?.value || '',
