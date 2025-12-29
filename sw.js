@@ -1,4 +1,4 @@
-const CACHE_NAME = 'training-dashboard-v2';
+const CACHE_NAME = 'training-dashboard-v3';
 const urlsToCache = [
   './',
   './index.html',
@@ -45,34 +45,35 @@ self.addEventListener('activate', event => {
   return self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - network first, fallback to cache (better for local development)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // Cache hit - return response
-        if (response) {
+        // Check if valid response
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
 
-        return fetch(event.request).then(response => {
-          // Check if valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+        // Clone the response
+        const responseToCache = response.clone();
+
+        // Update cache with fresh content
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+
+        return response;
+      })
+      .catch(err => {
+        // Network failed, try cache
+        console.log('Network failed, using cache:', err);
+        return caches.match(event.request).then(response => {
+          if (response) {
             return response;
           }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
-        }).catch(err => {
-          console.log('Fetch error:', err);
-          // Could return a custom offline page here
+          throw err;
         });
       })
   );
