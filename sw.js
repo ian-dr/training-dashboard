@@ -1,4 +1,4 @@
-const CACHE_NAME = 'training-dashboard-v3';
+const CACHE_NAME = 'training-dashboard-v6';
 const urlsToCache = [
   './',
   './index.html',
@@ -45,36 +45,68 @@ self.addEventListener('activate', event => {
   return self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache (better for local development)
+// Fetch event - cache first for navigation, network first for other resources
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Check if valid response
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+  // For navigation requests (HTML pages), use cache-first strategy
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match(event.request, { ignoreSearch: true })
+        .then(cachedResponse => {
+          if (cachedResponse) {
+            console.log('Serving from cache:', event.request.url);
+            // Try to update cache in background
+            fetch(event.request)
+              .then(response => {
+                if (response && response.status === 200 && response.type === 'basic') {
+                  caches.open(CACHE_NAME).then(cache => {
+                    cache.put(event.request, response);
+                  });
+                }
+              })
+              .catch(() => {}); // Ignore network errors for background update
 
-        // Clone the response
-        const responseToCache = response.clone();
+            return cachedResponse;
+          }
 
-        // Update cache with fresh content
-        caches.open(CACHE_NAME)
-          .then(cache => {
-            cache.put(event.request, responseToCache);
+          // No cached version, try network
+          console.log('No cache found, trying network:', event.request.url);
+          return fetch(event.request).catch(err => {
+            console.log('Navigation request failed and no cache available:', err);
+            throw err;
           });
-
-        return response;
-      })
-      .catch(err => {
-        // Network failed, try cache
-        console.log('Network failed, using cache:', err);
-        return caches.match(event.request).then(response => {
-          if (response) {
+        })
+    );
+  } else {
+    // For other requests, use network-first strategy
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Check if valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
-          throw err;
-        });
-      })
-  );
+
+          // Clone the response
+          const responseToCache = response.clone();
+
+          // Update cache with fresh content
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+
+          return response;
+        })
+        .catch(err => {
+          // Network failed, try cache
+          console.log('Network failed, using cache:', err);
+          return caches.match(event.request).then(response => {
+            if (response) {
+              return response;
+            }
+            throw err;
+          });
+        })
+    );
+  }
 });
