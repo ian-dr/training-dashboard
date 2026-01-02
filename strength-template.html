@@ -502,20 +502,19 @@
             // Initialize auto-resize for notes textarea
             initAutoResizeTextareas();
 
-            // Initialize drag and drop - use requestAnimationFrame to ensure DOM is fully rendered
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    initializeDragAndDrop();
-                    loadCollapsedState();
-                });
-            });
+            // Initialize drag and drop once
+            initializeDragAndDrop();
+
+            // Load collapsed state
+            loadCollapsedState();
         }
 
         function addExercise(dayId) {
             const exerciseList = document.getElementById(`exercises-${dayId}`);
             exerciseList.insertAdjacentHTML('beforeend', createExerciseHTML());
             updateExerciseCount(dayId);
-            requestAnimationFrame(() => initializeDragAndDrop());
+            // Make new element draggable
+            initializeDragAndDrop();
         }
 
         function removeExercise(exerciseId) {
@@ -543,7 +542,8 @@
             const exerciseList = document.getElementById(`exercises-${dayId}`);
             exerciseList.insertAdjacentHTML('beforeend', createGroupHTML());
             updateExerciseCount(dayId);
-            requestAnimationFrame(() => initializeDragAndDrop());
+            // Make new element draggable
+            initializeDragAndDrop();
         }
 
         function removeGroup(groupId) {
@@ -569,7 +569,8 @@
                     updateExerciseCount(dayId);
                 }
             }
-            requestAnimationFrame(() => initializeDragAndDrop());
+            // Make new element draggable
+            initializeDragAndDrop();
         }
 
         // Day Collapse/Expand Functions
@@ -608,228 +609,184 @@
             }
         }
 
-        // Drag and Drop Functions
-        let draggedElement = null;
-        let draggedFrom = null;
+        // Drag and Drop Functions - Using Event Delegation for Reliability
+        const dragState = {
+            element: null,
+            from: null,
+            initialized: false
+        };
 
-        function handleDragStart(e) {
-            draggedElement = e.currentTarget;
-            draggedFrom = draggedElement.parentElement;
-
-            // Only stop propagation if this exercise is inside a group
-            // This prevents dragging the parent group when we want to drag the exercise
-            const isInsideGroup = draggedElement.closest('.group-exercises') !== null;
-            if (isInsideGroup && draggedElement.classList.contains('exercise-item')) {
-                e.stopPropagation();
-            }
-
-            e.currentTarget.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', draggedElement.getAttribute('data-exercise-id') || draggedElement.getAttribute('data-group-id') || '');
-
-            // Add drop zones to all group exercise containers
-            document.querySelectorAll('.group-exercises').forEach(container => {
-                if (!container.querySelector('.drop-zone')) {
-                    const dropZone = document.createElement('div');
-                    dropZone.className = 'drop-zone';
-                    dropZone.textContent = 'Drop here to add to group';
-                    dropZone.addEventListener('dragover', handleDragOver);
-                    dropZone.addEventListener('drop', handleDropZone);
-                    container.appendChild(dropZone);
-                }
+        function cleanupDragState() {
+            // Remove all visual indicators
+            document.querySelectorAll('.dragging').forEach(el => {
+                el.classList.remove('dragging');
             });
-
-            // Also add drop zones to main exercise lists (for reordering outside groups)
-            document.querySelectorAll('.exercise-list').forEach(container => {
-                // Only add if there are exercises outside groups in this list
-                const hasOutsideExercises = Array.from(container.children).some(child =>
-                    child.classList.contains('exercise-item')
-                );
-
-                if (hasOutsideExercises && !container.querySelector('.drop-zone-main')) {
-                    const dropZone = document.createElement('div');
-                    dropZone.className = 'drop-zone drop-zone-main';
-                    dropZone.textContent = 'Drop here';
-                    dropZone.addEventListener('dragover', handleDragOver);
-                    dropZone.addEventListener('drop', handleDropZoneMain);
-                    container.appendChild(dropZone);
-                }
-            });
-        }
-
-        function handleDragEnd(e) {
-            e.currentTarget.classList.remove('dragging');
-
-            // Remove drag-over classes from all elements
             document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
                 el.classList.remove('drag-over-top', 'drag-over-bottom');
             });
-
-            // Remove ALL drop zones (both group and main)
-            document.querySelectorAll('.drop-zone').forEach(zone => zone.remove());
-            document.querySelectorAll('.drop-zone-main').forEach(zone => zone.remove());
-
-            draggedElement = null;
-            draggedFrom = null;
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.dataTransfer.dropEffect = 'move';
-
-            const target = e.currentTarget;
-
-            // Don't show feedback on the element being dragged
-            if (target === draggedElement) {
-                return false;
-            }
-
-            // Determine if we should show insert-before or insert-after indicator
-            const rect = target.getBoundingClientRect();
-            const mouseY = e.clientY;
-            const elementMiddle = rect.top + (rect.height / 2);
-
-            // Remove both classes first
-            target.classList.remove('drag-over-top', 'drag-over-bottom');
-
-            // Add appropriate class based on mouse position
-            if (mouseY > elementMiddle) {
-                target.classList.add('drag-over-bottom');
-            } else {
-                target.classList.add('drag-over-top');
-            }
-
-            return false;
-        }
-
-        function handleDragEnter(e) {
-            e.preventDefault();
-        }
-
-        function handleDragLeave(e) {
-            // Only remove if we're actually leaving this element (not entering a child)
-            if (e.currentTarget.contains(e.relatedTarget)) {
-                return;
-            }
-            e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
-
-            if (!draggedElement || draggedElement === e.currentTarget) {
-                return false;
-            }
-
-            const dropTarget = e.currentTarget;
-            const isDraggingExercise = draggedElement.classList.contains('exercise-item');
-            const isDraggingGroup = draggedElement.classList.contains('exercise-group');
-            const isDropTargetGroup = dropTarget.classList.contains('exercise-group');
-
-            // Don't allow dropping exercise directly on group header/container
-            if (isDraggingExercise && isDropTargetGroup) {
-                return false;
-            }
-
-            // Determine the correct parent container for insertion
-            let targetContainer = dropTarget.parentElement;
-
-            // Check if we should insert before or after based on mouse position
-            const rect = dropTarget.getBoundingClientRect();
-            const mouseY = e.clientY;
-            const elementMiddle = rect.top + (rect.height / 2);
-
-            // Insert the dragged element
-            try {
-                if (mouseY > elementMiddle) {
-                    // Mouse is in bottom half - insert after the drop target
-                    targetContainer.insertBefore(draggedElement, dropTarget.nextSibling);
-                } else {
-                    // Mouse is in top half - insert before the drop target
-                    targetContainer.insertBefore(draggedElement, dropTarget);
-                }
-            } catch (error) {
-                console.error('Error moving element:', error);
-            }
-
-            // Update exercise counts
-            updateExerciseCountsAfterDrag();
-
-            return false;
-        }
-
-        function handleDropZone(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const dropZone = e.currentTarget;
-            const groupContainer = dropZone.parentElement;
-
-            // Insert before the drop zone (at the end of exercises)
-            try {
-                groupContainer.insertBefore(draggedElement, dropZone);
-            } catch (error) {
-                console.error('Error adding to group:', error);
-            }
-
-            updateExerciseCountsAfterDrag();
-
-            return false;
-        }
-
-        function handleDropZoneMain(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const dropZone = e.currentTarget;
-            const listContainer = dropZone.parentElement;
-
-            // Insert before the drop zone (at the end)
-            try {
-                listContainer.insertBefore(draggedElement, dropZone);
-            } catch (error) {
-                console.error('Error adding to main list:', error);
-            }
-
-            updateExerciseCountsAfterDrag();
-
-            return false;
-        }
-
-        function updateExerciseCountsAfterDrag() {
-            // Update counts for all affected day cards
-            document.querySelectorAll('.day-card').forEach(dayCard => {
-                const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
-                updateExerciseCount(dayId);
+            // Remove any drop zones
+            document.querySelectorAll('.drop-zone, .drop-zone-main').forEach(zone => {
+                zone.remove();
             });
+            // Clear state
+            dragState.element = null;
+            dragState.from = null;
         }
 
         function initializeDragAndDrop() {
-            // Add drag handlers to all exercises and groups
-            const items = document.querySelectorAll('.exercise-item, .exercise-group');
+            // Only initialize once
+            if (dragState.initialized) {
+                // Just make sure all items are draggable
+                document.querySelectorAll('.exercise-item, .exercise-group').forEach(item => {
+                    item.setAttribute('draggable', 'true');
+                });
+                return;
+            }
 
-            items.forEach((item) => {
+            const workoutContainer = document.getElementById('workoutDays');
+            if (!workoutContainer) return;
+
+            // Set all items as draggable
+            document.querySelectorAll('.exercise-item, .exercise-group').forEach(item => {
                 item.setAttribute('draggable', 'true');
+            });
 
-                // Remove existing event listeners to prevent duplicates
-                item.removeEventListener('dragstart', handleDragStart);
-                item.removeEventListener('dragend', handleDragEnd);
-                item.removeEventListener('dragover', handleDragOver);
-                item.removeEventListener('dragenter', handleDragEnter);
-                item.removeEventListener('dragleave', handleDragLeave);
-                item.removeEventListener('drop', handleDrop);
+            // DRAGSTART - Use event delegation on parent container
+            workoutContainer.addEventListener('dragstart', (e) => {
+                const target = e.target.closest('.exercise-item, .exercise-group');
+                if (!target) return;
 
-                // Add event listeners
-                item.addEventListener('dragstart', handleDragStart, false);
-                item.addEventListener('dragend', handleDragEnd, false);
-                item.addEventListener('dragover', handleDragOver, false);
-                item.addEventListener('dragenter', handleDragEnter, false);
-                item.addEventListener('dragleave', handleDragLeave, false);
-                item.addEventListener('drop', handleDrop, false);
+                // Clean any existing state first
+                cleanupDragState();
+
+                dragState.element = target;
+                dragState.from = target.parentElement;
+
+                // Stop propagation if dragging exercise inside a group
+                const isInsideGroup = target.closest('.group-exercises') !== null;
+                if (isInsideGroup && target.classList.contains('exercise-item')) {
+                    e.stopPropagation();
+                }
+
+                target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', target.getAttribute('data-exercise-id') || target.getAttribute('data-group-id') || '');
+
+                // Add drop zones to group exercise containers
+                document.querySelectorAll('.group-exercises').forEach(container => {
+                    const dropZone = document.createElement('div');
+                    dropZone.className = 'drop-zone';
+                    dropZone.textContent = 'Drop here to add to group';
+                    container.appendChild(dropZone);
+                });
+            }, false);
+
+            // DRAGEND - Clean up
+            workoutContainer.addEventListener('dragend', (e) => {
+                cleanupDragState();
+            }, false);
+
+            // DRAGOVER - Show drop indicators
+            workoutContainer.addEventListener('dragover', (e) => {
+                const target = e.target.closest('.exercise-item, .exercise-group, .drop-zone');
+                if (!target || !dragState.element) return;
+
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+
+                // Don't show feedback on the element being dragged
+                if (target === dragState.element) return;
+
+                // Remove previous indicators
+                document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
+                    el.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+
+                // Add indicator based on mouse position
+                if (!target.classList.contains('drop-zone')) {
+                    const rect = target.getBoundingClientRect();
+                    const mouseY = e.clientY;
+                    const elementMiddle = rect.top + (rect.height / 2);
+
+                    if (mouseY > elementMiddle) {
+                        target.classList.add('drag-over-bottom');
+                    } else {
+                        target.classList.add('drag-over-top');
+                    }
+                }
+            }, false);
+
+            // DROP - Handle the drop
+            workoutContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (!dragState.element) return;
+
+                const dropTarget = e.target.closest('.exercise-item, .exercise-group, .drop-zone');
+                if (!dropTarget) return;
+
+                // Remove visual indicators
+                dropTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+
+                // Handle drop zone
+                if (dropTarget.classList.contains('drop-zone')) {
+                    const container = dropTarget.parentElement;
+                    container.insertBefore(dragState.element, dropTarget);
+                    updateExerciseCountsAfterDrag();
+                    cleanupDragState();
+                    return;
+                }
+
+                // Prevent dropping on self
+                if (dragState.element === dropTarget) {
+                    cleanupDragState();
+                    return;
+                }
+
+                // Don't allow dropping exercise directly on group container
+                const isDraggingExercise = dragState.element.classList.contains('exercise-item');
+                const isDropTargetGroup = dropTarget.classList.contains('exercise-group');
+                if (isDraggingExercise && isDropTargetGroup) {
+                    cleanupDragState();
+                    return;
+                }
+
+                // Determine where to insert based on mouse position
+                const rect = dropTarget.getBoundingClientRect();
+                const mouseY = e.clientY;
+                const elementMiddle = rect.top + (rect.height / 2);
+                const targetContainer = dropTarget.parentElement;
+
+                try {
+                    if (mouseY > elementMiddle) {
+                        targetContainer.insertBefore(dragState.element, dropTarget.nextSibling);
+                    } else {
+                        targetContainer.insertBefore(dragState.element, dropTarget);
+                    }
+                    updateExerciseCountsAfterDrag();
+                } catch (error) {
+                    console.error('Error during drop:', error);
+                }
+
+                cleanupDragState();
+            }, false);
+
+            // DRAGLEAVE - Clean up indicators
+            workoutContainer.addEventListener('dragleave', (e) => {
+                const target = e.target.closest('.exercise-item, .exercise-group');
+                if (target && !target.contains(e.relatedTarget)) {
+                    target.classList.remove('drag-over-top', 'drag-over-bottom');
+                }
+            }, false);
+
+            dragState.initialized = true;
+        }
+
+        function updateExerciseCountsAfterDrag() {
+            document.querySelectorAll('.day-card').forEach(dayCard => {
+                const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
+                updateExerciseCount(dayId);
             });
         }
 
