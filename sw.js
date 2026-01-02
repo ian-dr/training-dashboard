@@ -1,4 +1,4 @@
-const CACHE_NAME = 'training-dashboard-v6';
+const CACHE_NAME = 'training-dashboard-v7';
 const urlsToCache = [
   './',
   './index.html',
@@ -45,35 +45,35 @@ self.addEventListener('activate', event => {
   return self.clients.claim();
 });
 
-// Fetch event - cache first for navigation, network first for other resources
+// Fetch event - network first for HTML to get updates immediately
 self.addEventListener('fetch', event => {
-  // For navigation requests (HTML pages), use cache-first strategy
+  // For navigation requests (HTML pages), use network-first strategy for faster updates
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match(event.request, { ignoreSearch: true })
-        .then(cachedResponse => {
-          if (cachedResponse) {
-            console.log('Serving from cache:', event.request.url);
-            // Try to update cache in background
-            fetch(event.request)
-              .then(response => {
-                if (response && response.status === 200 && response.type === 'basic') {
-                  caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, response);
-                  });
-                }
-              })
-              .catch(() => {}); // Ignore network errors for background update
-
-            return cachedResponse;
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            console.log('Serving from network and updating cache:', event.request.url);
+            // Clone and cache the response
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+            return response;
           }
-
-          // No cached version, try network
-          console.log('No cache found, trying network:', event.request.url);
-          return fetch(event.request).catch(err => {
-            console.log('Navigation request failed and no cache available:', err);
-            throw err;
-          });
+          return response;
+        })
+        .catch(err => {
+          // Network failed, try cache as fallback
+          console.log('Network failed, trying cache:', err);
+          return caches.match(event.request, { ignoreSearch: true })
+            .then(cachedResponse => {
+              if (cachedResponse) {
+                console.log('Serving from cache (offline):', event.request.url);
+                return cachedResponse;
+              }
+              throw err;
+            });
         })
     );
   } else {
