@@ -65,10 +65,10 @@ function showToast(message, type = 'success', duration = 3000) {
   document.body.appendChild(toast);
 
   setTimeout(() => {
-    toast.style.animation = 'slideOut 0.3s ease';
+    toast.style.animation = 'slideOut 0.2s ease';
     setTimeout(() => {
       document.body.removeChild(toast);
-    }, 300);
+    }, 200);
   }, duration);
 }
 

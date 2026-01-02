@@ -74,6 +74,37 @@
             color: var(--primary-color);
         }
 
+        .day-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px 10px;
+            transition: transform 0.15s ease, color 0.15s ease;
+            line-height: 1;
+        }
+
+        .day-toggle-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .day-card.collapsed .day-toggle-btn {
+            transform: rotate(-90deg);
+        }
+
+        .day-content {
+            overflow: hidden;
+            transition: max-height 0.2s ease, opacity 0.2s ease;
+            max-height: 10000px;
+            opacity: 1;
+        }
+
+        .day-card.collapsed .day-content {
+            max-height: 0;
+            opacity: 0;
+        }
+
         .exercise-list {
             display: grid;
             gap: 15px;
@@ -251,12 +282,19 @@
             .action-bar,
             .add-exercise-btn,
             .remove-exercise-btn,
-            .group-header button {
+            .group-header button,
+            .day-toggle-btn {
                 display: none !important;
             }
 
             .exercise-group {
                 border-style: solid;
+            }
+
+            /* Always show day content when printing, even if collapsed */
+            .day-card.collapsed .day-content {
+                max-height: none !important;
+                opacity: 1 !important;
             }
         }
     </style>
@@ -402,7 +440,10 @@
             return `
                 <div class="day-card" data-day="${day}">
                     <div class="day-header">
-                        <h3>${day}</h3>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button class="day-toggle-btn" onclick="toggleDay('${dayId}')" title="Collapse/Expand">▼</button>
+                            <h3>${day}</h3>
+                        </div>
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="date" class="day-date" style="width: auto;" placeholder="Date">
                             <span style="color: var(--text-secondary); font-size: 0.9rem;">
@@ -410,16 +451,18 @@
                             </span>
                         </div>
                     </div>
-                    <div class="exercise-list" id="exercises-${dayId}">
-                        ${itemsHTML}
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button class="btn btn-small btn-primary add-exercise-btn" onclick="addExercise('${dayId}')">
-                            + Add Exercise
-                        </button>
-                        <button class="btn btn-small btn-secondary" onclick="addGroup('${dayId}')">
-                            + Create Group
-                        </button>
+                    <div class="day-content">
+                        <div class="exercise-list" id="exercises-${dayId}">
+                            ${itemsHTML}
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn btn-small btn-primary add-exercise-btn" onclick="addExercise('${dayId}')">
+                                + Add Exercise
+                            </button>
+                            <button class="btn btn-small btn-secondary" onclick="addGroup('${dayId}')">
+                                + Create Group
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -463,6 +506,7 @@
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     initializeDragAndDrop();
+                    loadCollapsedState();
                 });
             });
         }
@@ -526,6 +570,42 @@
                 }
             }
             requestAnimationFrame(() => initializeDragAndDrop());
+        }
+
+        // Day Collapse/Expand Functions
+        function toggleDay(dayId) {
+            const dayCard = document.querySelector(`[data-day="${WORKOUT_DAYS.find(d => d.toLowerCase().replace(' ', '-') === dayId)}"]`);
+            if (!dayCard) return;
+
+            dayCard.classList.toggle('collapsed');
+
+            // Save collapsed state to localStorage
+            saveCollapsedState();
+        }
+
+        function saveCollapsedState() {
+            const collapsedDays = [];
+            document.querySelectorAll('.day-card.collapsed').forEach(card => {
+                collapsedDays.push(card.getAttribute('data-day'));
+            });
+            localStorage.setItem(`program-${programId}-collapsed`, JSON.stringify(collapsedDays));
+        }
+
+        function loadCollapsedState() {
+            const saved = localStorage.getItem(`program-${programId}-collapsed`);
+            if (saved) {
+                try {
+                    const collapsedDays = JSON.parse(saved);
+                    collapsedDays.forEach(day => {
+                        const dayCard = document.querySelector(`[data-day="${day}"]`);
+                        if (dayCard) {
+                            dayCard.classList.add('collapsed');
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error loading collapsed state:', e);
+                }
+            }
         }
 
         // Drag and Drop Functions
