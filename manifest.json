@@ -3,6 +3,7 @@
   "short_name": "TrainDash",
   "description": "Training program dashboard for strength and weekly training",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f5f5f5",
   "theme_color": "#28a745",
