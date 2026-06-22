@@ -125,16 +125,16 @@
     let programId = null;
     let autosave = null;
 
-    // Seven days, two sessions each. Placeholders preserve the original
-    // domain examples and are display-only (never saved).
+    // Seven days, two sessions each. Placeholders are generic, display-only
+    // hints (never saved) to show how each column can be filled in.
     const DAY_TEMPLATE = [
-      ['Monday',    [['C4 Primary Session', '40//20s, 4x2k, island loops, etc.', ''], ['Hydro Hill', "60' Hill Repeats", '60']]],
-      ['Tuesday',   [['Long C6', "2-3x6k, 2x8k, 2x45', etc. w/ some tech work", ''], ['Strength', 'Tuesday BSPC Program', '60']]],
-      ['Wednesday', [['Spine Health and Hip Mobility', 'BSPC Program', '30'], ['OFF', 'OFF', '']]],
-      ['Thursday',  [['C5 Medium Duration', "3x4k, Island loops (3x), 3x20', 2x30', etc.", ''], ['Strength', 'Thursday BSPC Program', '60']]],
-      ['Friday',    [['C6 Steady', 'Some rolling drills, mostly continuous 18-20', ''], ['Strength', 'Friday BSPC Program', '60']]],
-      ['Saturday',  [['C2/1', '4x750, Omnium, 2x1500, 6-8x500, etc.', ''], ['C6 XT', 'Adjust volume based on weekly targets; cut if necessary', '']]],
-      ['Sunday',    [['Trail Run', 'Trip n Fall', ''], ['C6 Row/Tech', 'Technical; low load. Adjust volume to fit weekly goal', '']]],
+      ['Monday',    [['Primary session', 'Main set / intervals', ''], ['Secondary session', 'Easy / recovery', '']]],
+      ['Tuesday',   [['Endurance', 'Steady aerobic work', ''], ['Strength', 'Gym program', '']]],
+      ['Wednesday', [['Mobility', 'Warm-up & flexibility', ''], ['Rest', 'Off', '']]],
+      ['Thursday',  [['Intervals', 'Threshold / tempo', ''], ['Strength', 'Gym program', '']]],
+      ['Friday',    [['Steady session', 'Continuous aerobic', ''], ['Strength', 'Gym program', '']]],
+      ['Saturday',  [['Quality session', 'Race-pace / speed work', ''], ['Cross-training', 'Optional volume', '']]],
+      ['Sunday',    [['Long session', 'Aerobic base', ''], ['Technique', 'Low load / skills', '']]],
     ];
 
     function buildSchedule() {
