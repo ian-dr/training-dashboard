@@ -1,953 +1,456 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Strength Training Program</title>
-    <link rel="stylesheet" href="styles/main.css">
-    <style>
-        .header-section {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f59e0b">
+  <title>Strength Program · Training Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: var(--space-4);
+    }
 
-        .header-section h1 {
-            text-align: center;
-            text-decoration: underline;
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
+    .day { margin-top: var(--space-4); }
+    .day-head {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding-bottom: var(--space-3);
+      margin-bottom: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+    .day-head h3 { margin: 0; color: var(--accent); }
+    .day-head .day-date { width: auto; }
+    .day-head .count { color: var(--text-muted); font-size: 0.85rem; }
+    .day-toggle {
+      width: 28px; height: 28px;
+      display: grid; place-items: center;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: transform var(--transition);
+    }
+    .day.collapsed .day-toggle { transform: rotate(-90deg); }
+    .day.collapsed .day-body { display: none; }
 
-        .program-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
+    .item-list { display: flex; flex-direction: column; gap: 10px; }
 
-        .meta-field {
-            display: flex;
-            flex-direction: column;
-        }
+    .exercise {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+    }
+    .exercise-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .exercise-top .exercise-name { font-weight: 600; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; }
+    .detail-grid label { margin-bottom: 3px; font-size: 0.75rem; }
+    .detail-grid input { padding: 6px 8px; font-size: 0.9rem; }
 
-        .meta-field label {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
+    .group {
+      background: var(--surface-2);
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+    }
+    .group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .group-name { font-weight: 600; color: var(--accent); }
+    .group-items { display: flex; flex-direction: column; gap: 10px; padding-left: 4px; }
+    .group-actions { display: flex; gap: 6px; margin-left: auto; }
 
-        .action-bar {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
+    .drag-handle {
+      cursor: grab;
+      color: var(--text-faint);
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0 4px;
+      user-select: none;
+      touch-action: none;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    .dragging { opacity: 0.4; }
 
-        .workout-days {
-            display: grid;
-            gap: 20px;
-        }
+    .day-actions { display: flex; gap: 8px; margin-top: 12px; }
 
-        .day-card {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
-
-        .day-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .day-header h3 {
-            margin: 0;
-            color: var(--primary-color);
-        }
-
-        .day-toggle-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 5px 10px;
-            transition: transform 0.15s ease, color 0.15s ease;
-            line-height: 1;
-        }
-
-        .day-toggle-btn:hover {
-            color: var(--primary-color);
-        }
-
-        .day-card.collapsed .day-toggle-btn {
-            transform: rotate(-90deg);
-        }
-
-        .day-content {
-            overflow: hidden;
-            transition: max-height 0.2s ease, opacity 0.2s ease;
-            max-height: 10000px;
-            opacity: 1;
-        }
-
-        .day-card.collapsed .day-content {
-            max-height: 0;
-            opacity: 0;
-        }
-
-        .exercise-list {
-            display: grid;
-            gap: 15px;
-        }
-
-        .exercise-item {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .exercise-header {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-            align-items: flex-start;
-        }
-
-        .exercise-name-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .exercise-name {
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .exercise-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px;
-        }
-
-        .detail-field {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .detail-field label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-bottom: 3px;
-        }
-
-        .detail-field input {
-            padding: 6px 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            text-align: left;
-        }
-
-        .add-exercise-btn {
-            margin-top: 10px;
-        }
-
-        .remove-exercise-btn {
-            background-color: var(--danger-color);
-            color: white;
-            border: none;
-            padding: 2px 12px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            white-space: nowrap;
-            width: fit-content;
-            height: auto;
-            line-height: 1.4;
-        }
-
-        .remove-exercise-btn:hover {
-            background-color: var(--danger-hover);
-        }
-
-        .notes-section {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            margin-top: 20px;
-        }
-
-        .exercise-group {
-            background-color: var(--card-background);
-            border: 2px dashed var(--primary-color);
-            border-radius: var(--border-radius);
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid var(--primary-color);
-        }
-
-        .group-name {
-            font-weight: bold;
-            color: var(--primary-color);
-            font-size: 1rem;
-            padding: 6px 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background-color: var(--card-background);
-        }
-
-        .group-exercises {
-            display: grid;
-            gap: 10px;
-        }
-
-        /* Drag and Drop Styles */
-        .drag-handle {
-            cursor: grab;
-            color: var(--text-secondary);
-            font-size: 1.2rem;
-            padding: 0 8px;
-            user-select: none;
-            margin-right: 8px;
-        }
-
-        .drag-handle:active {
-            cursor: grabbing;
-        }
-
-        .exercise-item[draggable="true"],
-        .exercise-group[draggable="true"] {
-            cursor: grab;
-        }
-
-        .exercise-item[draggable="true"]:active,
-        .exercise-group[draggable="true"]:active {
-            cursor: grabbing;
-        }
-
-        .dragging {
-            opacity: 0.5;
-        }
-
-        .dragging * {
-            pointer-events: none;
-        }
-
-        .drag-over-top {
-            border-top: 3px solid var(--primary-color);
-        }
-
-        .drag-over-bottom {
-            border-bottom: 3px solid var(--primary-color);
-        }
-
-        .drop-zone {
-            padding: 15px;
-            margin: 10px 0;
-            border: 2px dashed var(--primary-color);
-            border-radius: var(--border-radius);
-            background-color: rgba(217, 126, 34, 0.05);
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        .drop-zone:hover {
-            background-color: rgba(217, 126, 34, 0.1);
-        }
-
-        @media print {
-            .action-bar,
-            .add-exercise-btn,
-            .remove-exercise-btn,
-            .group-header button,
-            .day-toggle-btn {
-                display: none !important;
-            }
-
-            .exercise-group {
-                border-style: solid;
-            }
-
-            /* Always show day content when printing, even if collapsed */
-            .day-card.collapsed .day-content {
-                max-height: none !important;
-                opacity: 1 !important;
-            }
-        }
-    </style>
+    @media (max-width: 640px) {
+      .group-actions { margin-left: 0; }
+      .group-head { flex-wrap: wrap; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container-wide">
-        <div class="action-bar">
-            <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Back to Dashboard</button>
-            <button class="btn btn-primary" onclick="saveProgram(true)">Save Program</button>
-            <button class="btn btn-outline" onclick="exportToImage()">Export as Image</button>
-            <button class="btn btn-outline" onclick="printProgram()">Print</button>
-        </div>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">TD</span>
+        <span class="brand-name">Training Dashboard</span>
+      </a>
+      <nav class="appbar-nav">
+        <a href="index.html">Dashboard</a>
+        <a href="history.html">History</a>
+      </nav>
+    </div>
+  </header>
 
-        <div class="header-section">
-            <h1>STRENGTH TRAINING PROGRAM</h1>
-
-            <div class="program-meta">
-                <div class="meta-field">
-                    <label>Program Name:</label>
-                    <input type="text" id="programName" placeholder="e.g., Winter Strength Phase">
-                </div>
-                <div class="meta-field">
-                    <label>Training Phase:</label>
-                    <input type="text" id="trainingPhase" placeholder="e.g., Hypertrophy, Strength, Power">
-                </div>
-                <div class="meta-field">
-                    <label>Week #:</label>
-                    <input type="number" id="weekNumber" placeholder="1">
-                </div>
-                <div class="meta-field">
-                    <label>From:</label>
-                    <input type="date" id="startDate">
-                </div>
-                <div class="meta-field">
-                    <label>To:</label>
-                    <input type="date" id="endDate">
-                </div>
-            </div>
-        </div>
-
-        <div class="workout-days" id="workoutDays">
-            <!-- Days will be generated by JavaScript -->
-        </div>
-
-        <div class="notes-section">
-            <h3>PROGRAM NOTES & GUIDELINES</h3>
-            <textarea id="programNotes" placeholder="Technical cues, progression notes, warm-up protocol, etc..."></textarea>
-        </div>
+  <main class="page">
+    <div class="toolbar">
+      <a class="btn btn-ghost" href="index.html">← Dashboard</a>
+      <button class="btn btn-primary" id="saveBtn">Save</button>
+      <button class="btn" id="exportBtn">Export image</button>
+      <button class="btn" id="printBtn">Print</button>
+      <div class="toolbar-spacer"></div>
+      <span class="save-status" id="saveStatus" data-state="saved">Saved</span>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="scripts/utils.js"></script>
-    <script src="scripts/storage.js"></script>
-    <script>
-        const WORKOUT_DAYS = ['Tuesday', 'Thursday', 'Friday'];
-        let programId = null;
+    <div id="capture" class="stack">
+      <section class="card">
+        <h1 style="margin-bottom: var(--space-4);">Strength Training Program</h1>
+        <div class="meta-grid">
+          <div class="field">
+            <label for="programName">Program name</label>
+            <input type="text" id="programName" placeholder="e.g. Winter Strength Phase">
+          </div>
+          <div class="field">
+            <label for="trainingPhase">Training phase</label>
+            <input type="text" id="trainingPhase" placeholder="e.g. Hypertrophy">
+          </div>
+          <div class="field">
+            <label for="weekNumber">Week #</label>
+            <input type="number" id="weekNumber" placeholder="1" min="0">
+          </div>
+          <div class="field">
+            <label for="startDate">From</label>
+            <input type="date" id="startDate">
+          </div>
+          <div class="field">
+            <label for="endDate">To</label>
+            <input type="date" id="endDate">
+          </div>
+        </div>
+      </section>
 
-        function createExerciseHTML(exerciseData = {}) {
-            const exerciseId = generateUUID();
+      <div id="workoutDays"></div>
 
-            return `
-                <div class="exercise-item" data-exercise-id="${exerciseId}">
-                    <div class="exercise-header">
-                        <span class="drag-handle" title="Drag to reorder">⋮⋮</span>
-                        <div class="exercise-name-container">
-                            <input type="text" class="exercise-name" placeholder="Exercise name..." value="${exerciseData.name || ''}">
-                            <button class="remove-exercise-btn" onclick="removeExercise('${exerciseId}')">Remove</button>
-                        </div>
-                    </div>
-                    <div class="exercise-details">
-                        <div class="detail-field">
-                            <label>Sets</label>
-                            <input type="text" class="sets-input" placeholder="3-4" value="${exerciseData.sets || ''}">
-                        </div>
-                        <div class="detail-field">
-                            <label>Reps</label>
-                            <input type="text" class="reps-input" placeholder="8-12" value="${exerciseData.reps || ''}">
-                        </div>
-                        <div class="detail-field">
-                            <label>Weight/Load</label>
-                            <input type="text" class="weight-input" placeholder="70%" value="${exerciseData.weight || ''}">
-                        </div>
-                        <div class="detail-field">
-                            <label>Tempo</label>
-                            <input type="text" class="tempo-input" placeholder="3-1-1-0" value="${exerciseData.tempo || ''}">
-                        </div>
-                        <div class="detail-field">
-                            <label>Notes</label>
-                            <input type="text" class="notes-input" placeholder="Optional notes..." value="${exerciseData.notes || ''}">
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
+      <section class="card">
+        <label for="programNotes">Program notes &amp; guidelines</label>
+        <textarea id="programNotes" rows="4" placeholder="Technical cues, progression notes, warm-up protocol…"></textarea>
+      </section>
+    </div>
+  </main>
 
-        function createGroupHTML(groupData = {}) {
-            const groupId = groupData.id || generateUUID();
-            const exercises = groupData.exercises || [];
+  <script src="vendor/html2canvas.min.js"></script>
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/app.js"></script>
+  <script>
+    const WORKOUT_DAYS = ['Tuesday', 'Thursday', 'Friday'];
+    let programId = null;
+    let autosave = null;
 
-            return `
-                <div class="exercise-group" data-group-id="${groupId}">
-                    <div class="group-header">
-                        <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                            <span class="drag-handle" title="Drag to reorder">⋮⋮</span>
-                            <input type="text" class="group-name" placeholder="Superset A" value="${groupData.name || ''}">
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn btn-small btn-outline" onclick="addExerciseToGroup('${groupId}')">+ Add Exercise</button>
-                            <button class="remove-exercise-btn" onclick="removeGroup('${groupId}')">Delete Group</button>
-                        </div>
-                    </div>
-                    <div class="group-exercises" id="group-exercises-${groupId}">
-                        ${exercises.map(ex => createExerciseHTML(ex)).join('')}
-                    </div>
-                </div>
-            `;
-        }
+    const dayId = (day) => day.toLowerCase().replace(/\s+/g, '-');
 
-        function createDayCard(day, items = []) {
-            const dayId = day.toLowerCase().replace(' ', '-');
+    /* ---------- Templates ---------- */
+    function exerciseHTML(ex = {}) {
+      const id = ex.id || generateUUID();
+      const val = (v) => sanitizeHTML(v || '');
+      return `
+        <div class="exercise" data-item="exercise" data-id="${id}">
+          <div class="exercise-top">
+            <span class="drag-handle" draggable="true" title="Drag to reorder">⠿</span>
+            <input type="text" class="exercise-name f-name" placeholder="Exercise name…" value="${val(ex.name)}">
+            <button class="btn btn-sm btn-danger" data-action="remove-exercise">Remove</button>
+          </div>
+          <div class="detail-grid">
+            <div><label>Sets</label><input type="text" class="f-sets" placeholder="3-4" value="${val(ex.sets)}"></div>
+            <div><label>Reps</label><input type="text" class="f-reps" placeholder="8-12" value="${val(ex.reps)}"></div>
+            <div><label>Load</label><input type="text" class="f-weight" placeholder="70%" value="${val(ex.weight)}"></div>
+            <div><label>Tempo</label><input type="text" class="f-tempo" placeholder="3-1-1-0" value="${val(ex.tempo)}"></div>
+            <div><label>Notes</label><input type="text" class="f-notes" placeholder="Optional" value="${val(ex.notes)}"></div>
+          </div>
+        </div>`;
+    }
 
-            // Count total exercises (individual + grouped)
-            let exerciseCount = 0;
-            items.forEach(item => {
-                if (item.type === 'exercise' || !item.type) {
-                    // Handle both new format and old format (no type = old exercise)
-                    exerciseCount++;
-                } else if (item.type === 'group') {
-                    exerciseCount += (item.exercises?.length || 0);
-                }
+    function groupHTML(group = {}) {
+      const id = group.id || generateUUID();
+      const inner = (group.exercises || []).map(exerciseHTML).join('');
+      return `
+        <div class="group" data-item="group" data-id="${id}">
+          <div class="group-head">
+            <span class="drag-handle" draggable="true" title="Drag to reorder">⠿</span>
+            <input type="text" class="group-name" placeholder="Superset A" value="${sanitizeHTML(group.name || '')}">
+            <div class="group-actions">
+              <button class="btn btn-sm" data-action="add-to-group">+ Exercise</button>
+              <button class="btn btn-sm btn-danger" data-action="remove-group">Delete</button>
+            </div>
+          </div>
+          <div class="group-items">${inner}</div>
+        </div>`;
+    }
+
+    function dayHTML(day, items) {
+      return `
+        <section class="card day" data-day="${day}">
+          <div class="day-head">
+            <button class="day-toggle" data-action="toggle-day" aria-label="Collapse day">▾</button>
+            <h3>${day}</h3>
+            <input type="date" class="day-date">
+            <span class="count"><span class="count-n">0</span> exercises</span>
+          </div>
+          <div class="day-body">
+            <div class="item-list">${items.map((it) => (it.type === 'group' ? groupHTML(it) : exerciseHTML(it))).join('')}</div>
+            <div class="day-actions">
+              <button class="btn btn-sm btn-primary" data-action="add-exercise">+ Exercise</button>
+              <button class="btn btn-sm" data-action="add-group">+ Group</button>
+            </div>
+          </div>
+        </section>`;
+    }
+
+    /* ---------- Build & hydrate ---------- */
+    function build(data) {
+      const container = document.getElementById('workoutDays');
+      container.innerHTML = WORKOUT_DAYS.map((day) => {
+        const stored = data?.days?.[day];
+        let items = [];
+        if (stored?.items) items = stored.items;
+        else if (stored?.exercises) items = stored.exercises.map((ex) => ({ type: 'exercise', ...ex })); // legacy
+        return dayHTML(day, items);
+      }).join('');
+
+      // Restore per-day dates.
+      WORKOUT_DAYS.forEach((day) => {
+        const date = data?.days?.[day]?.date;
+        if (date) container.querySelector(`[data-day="${day}"] .day-date`).value = date;
+      });
+
+      WORKOUT_DAYS.forEach((day) => updateCount(day));
+      restoreCollapsed();
+      initAutoResizeTextareas();
+    }
+
+    function updateCount(day) {
+      const card = document.querySelector(`[data-day="${day}"]`);
+      if (!card) return;
+      card.querySelector('.count-n').textContent = card.querySelectorAll('.exercise').length;
+    }
+    function updateAllCounts() { WORKOUT_DAYS.forEach(updateCount); }
+
+    /* ---------- Collapse state ---------- */
+    const collapseKey = () => `program-${programId}-collapsed`;
+    function saveCollapsed() {
+      const days = [...document.querySelectorAll('.day.collapsed')].map((d) => d.dataset.day);
+      try { localStorage.setItem(collapseKey(), JSON.stringify(days)); } catch {}
+    }
+    function restoreCollapsed() {
+      try {
+        const days = JSON.parse(localStorage.getItem(collapseKey()) || '[]');
+        days.forEach((day) => document.querySelector(`[data-day="${day}"]`)?.classList.add('collapsed'));
+      } catch {}
+    }
+
+    /* ---------- Serialise ---------- */
+    function readExercise(el) {
+      return {
+        type: 'exercise',
+        id: el.dataset.id,
+        name: el.querySelector('.f-name').value,
+        sets: el.querySelector('.f-sets').value,
+        reps: el.querySelector('.f-reps').value,
+        weight: el.querySelector('.f-weight').value,
+        tempo: el.querySelector('.f-tempo').value,
+        notes: el.querySelector('.f-notes').value,
+      };
+    }
+
+    function getData() {
+      const days = {};
+      document.querySelectorAll('.day').forEach((card) => {
+        const items = [];
+        card.querySelector('.item-list').querySelectorAll(':scope > [data-item]').forEach((node) => {
+          if (node.dataset.item === 'group') {
+            items.push({
+              type: 'group',
+              id: node.dataset.id,
+              name: node.querySelector('.group-name').value,
+              exercises: [...node.querySelectorAll('.exercise')].map((ex) => {
+                const e = readExercise(ex);
+                delete e.type;
+                return e;
+              }),
             });
-
-            // Render items (mix of exercises and groups)
-            const itemsHTML = items.map(item => {
-                if (item.type === 'group') {
-                    return createGroupHTML(item);
-                } else {
-                    // Backwards compatibility: handle old format or type === 'exercise'
-                    return createExerciseHTML(item);
-                }
-            }).join('');
-
-            return `
-                <div class="day-card" data-day="${day}">
-                    <div class="day-header">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <button class="day-toggle-btn" onclick="toggleDay('${dayId}')" title="Collapse/Expand">▼</button>
-                            <h3>${day}</h3>
-                        </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="date" class="day-date" style="width: auto;" placeholder="Date">
-                            <span style="color: var(--text-secondary); font-size: 0.9rem;">
-                                <span class="exercise-count">${exerciseCount}</span> exercises
-                            </span>
-                        </div>
-                    </div>
-                    <div class="day-content">
-                        <div class="exercise-list" id="exercises-${dayId}">
-                            ${itemsHTML}
-                        </div>
-                        <div style="display: flex; gap: 10px; margin-top: 10px;">
-                            <button class="btn btn-small btn-primary add-exercise-btn" onclick="addExercise('${dayId}')">
-                                + Add Exercise
-                            </button>
-                            <button class="btn btn-small btn-secondary" onclick="addGroup('${dayId}')">
-                                + Create Group
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function initializeWorkoutDays(programData = null) {
-            const container = document.getElementById('workoutDays');
-            container.innerHTML = '';
-
-            WORKOUT_DAYS.forEach(day => {
-                const dayId = day.toLowerCase().replace(' ', '-');
-                let items = [];
-
-                if (programData && programData.days && programData.days[day]) {
-                    // Check for new format (items) or old format (exercises)
-                    if (programData.days[day].items) {
-                        items = programData.days[day].items;
-                    } else if (programData.days[day].exercises) {
-                        // Backwards compatibility: convert old exercises to items format
-                        items = programData.days[day].exercises.map(ex => ({
-                            type: 'exercise',
-                            ...ex
-                        }));
-                    }
-                }
-
-                container.innerHTML += createDayCard(day, items);
-
-                // Set date if available
-                if (programData && programData.days && programData.days[day] && programData.days[day].date) {
-                    const dayCard = container.querySelector(`[data-day="${day}"]`);
-                    const dateInput = dayCard.querySelector('.day-date');
-                    if (dateInput) dateInput.value = programData.days[day].date;
-                }
-            });
-
-            // Initialize auto-resize for notes textarea
-            initAutoResizeTextareas();
-
-            // Initialize drag and drop once
-            initializeDragAndDrop();
-
-            // Load collapsed state
-            loadCollapsedState();
-        }
-
-        function addExercise(dayId) {
-            const exerciseList = document.getElementById(`exercises-${dayId}`);
-            exerciseList.insertAdjacentHTML('beforeend', createExerciseHTML());
-            updateExerciseCount(dayId);
-            // Make new element draggable
-            initializeDragAndDrop();
-        }
-
-        function removeExercise(exerciseId) {
-            const exercise = document.querySelector(`[data-exercise-id="${exerciseId}"]`);
-            if (exercise) {
-                const dayCard = exercise.closest('.day-card');
-                exercise.remove();
-
-                if (dayCard) {
-                    const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
-                    updateExerciseCount(dayId);
-                }
-            }
-        }
-
-        function updateExerciseCount(dayId) {
-            const dayCard = document.querySelector(`#exercises-${dayId}`).closest('.day-card');
-            const individualExercises = dayCard.querySelectorAll('.exercise-list > .exercise-item').length;
-            const groupExercises = dayCard.querySelectorAll('.exercise-group .exercise-item').length;
-            const count = individualExercises + groupExercises;
-            dayCard.querySelector('.exercise-count').textContent = count;
-        }
-
-        function addGroup(dayId) {
-            const exerciseList = document.getElementById(`exercises-${dayId}`);
-            exerciseList.insertAdjacentHTML('beforeend', createGroupHTML());
-            updateExerciseCount(dayId);
-            // Make new element draggable
-            initializeDragAndDrop();
-        }
-
-        function removeGroup(groupId) {
-            const group = document.querySelector(`[data-group-id="${groupId}"]`);
-            if (group) {
-                const dayCard = group.closest('.day-card');
-                group.remove();
-                if (dayCard) {
-                    const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
-                    updateExerciseCount(dayId);
-                }
-            }
-        }
-
-        function addExerciseToGroup(groupId) {
-            const groupExercises = document.getElementById(`group-exercises-${groupId}`);
-            groupExercises.insertAdjacentHTML('beforeend', createExerciseHTML());
-            const group = document.querySelector(`[data-group-id="${groupId}"]`);
-            if (group) {
-                const dayCard = group.closest('.day-card');
-                if (dayCard) {
-                    const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
-                    updateExerciseCount(dayId);
-                }
-            }
-            // Make new element draggable
-            initializeDragAndDrop();
-        }
-
-        // Day Collapse/Expand Functions
-        function toggleDay(dayId) {
-            const dayCard = document.querySelector(`[data-day="${WORKOUT_DAYS.find(d => d.toLowerCase().replace(' ', '-') === dayId)}"]`);
-            if (!dayCard) return;
-
-            dayCard.classList.toggle('collapsed');
-
-            // Save collapsed state to localStorage
-            saveCollapsedState();
-        }
-
-        function saveCollapsedState() {
-            const collapsedDays = [];
-            document.querySelectorAll('.day-card.collapsed').forEach(card => {
-                collapsedDays.push(card.getAttribute('data-day'));
-            });
-            localStorage.setItem(`program-${programId}-collapsed`, JSON.stringify(collapsedDays));
-        }
-
-        function loadCollapsedState() {
-            const saved = localStorage.getItem(`program-${programId}-collapsed`);
-            if (saved) {
-                try {
-                    const collapsedDays = JSON.parse(saved);
-                    collapsedDays.forEach(day => {
-                        const dayCard = document.querySelector(`[data-day="${day}"]`);
-                        if (dayCard) {
-                            dayCard.classList.add('collapsed');
-                        }
-                    });
-                } catch (e) {
-                    console.error('Error loading collapsed state:', e);
-                }
-            }
-        }
-
-        // Drag and Drop Functions - Using Event Delegation for Reliability
-        const dragState = {
-            element: null,
-            from: null,
-            initialized: false
-        };
-
-        function cleanupDragState() {
-            // Remove all visual indicators
-            document.querySelectorAll('.dragging').forEach(el => {
-                el.classList.remove('dragging');
-            });
-            document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
-                el.classList.remove('drag-over-top', 'drag-over-bottom');
-            });
-            // Remove any drop zones
-            document.querySelectorAll('.drop-zone, .drop-zone-main').forEach(zone => {
-                zone.remove();
-            });
-            // Clear state
-            dragState.element = null;
-            dragState.from = null;
-        }
-
-        function initializeDragAndDrop() {
-            // Only initialize once
-            if (dragState.initialized) {
-                // Just make sure all items are draggable
-                document.querySelectorAll('.exercise-item, .exercise-group').forEach(item => {
-                    item.setAttribute('draggable', 'true');
-                });
-                return;
-            }
-
-            const workoutContainer = document.getElementById('workoutDays');
-            if (!workoutContainer) return;
-
-            // Set all items as draggable
-            document.querySelectorAll('.exercise-item, .exercise-group').forEach(item => {
-                item.setAttribute('draggable', 'true');
-            });
-
-            // DRAGSTART - Use event delegation on parent container
-            workoutContainer.addEventListener('dragstart', (e) => {
-                const target = e.target.closest('.exercise-item, .exercise-group');
-                if (!target) return;
-
-                // Clean any existing state first
-                cleanupDragState();
-
-                dragState.element = target;
-                dragState.from = target.parentElement;
-
-                // Stop propagation if dragging exercise inside a group
-                const isInsideGroup = target.closest('.group-exercises') !== null;
-                if (isInsideGroup && target.classList.contains('exercise-item')) {
-                    e.stopPropagation();
-                }
-
-                target.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', target.getAttribute('data-exercise-id') || target.getAttribute('data-group-id') || '');
-
-                // Add drop zones to group exercise containers
-                document.querySelectorAll('.group-exercises').forEach(container => {
-                    const dropZone = document.createElement('div');
-                    dropZone.className = 'drop-zone';
-                    dropZone.textContent = 'Drop here to add to group';
-                    container.appendChild(dropZone);
-                });
-            }, false);
-
-            // DRAGEND - Clean up
-            workoutContainer.addEventListener('dragend', (e) => {
-                cleanupDragState();
-            }, false);
-
-            // DRAGOVER - Show drop indicators
-            workoutContainer.addEventListener('dragover', (e) => {
-                const target = e.target.closest('.exercise-item, .exercise-group, .drop-zone');
-                if (!target || !dragState.element) return;
-
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-
-                // Don't show feedback on the element being dragged
-                if (target === dragState.element) return;
-
-                // Remove previous indicators
-                document.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
-                    el.classList.remove('drag-over-top', 'drag-over-bottom');
-                });
-
-                // Add indicator based on mouse position
-                if (!target.classList.contains('drop-zone')) {
-                    const rect = target.getBoundingClientRect();
-                    const mouseY = e.clientY;
-                    const elementMiddle = rect.top + (rect.height / 2);
-
-                    if (mouseY > elementMiddle) {
-                        target.classList.add('drag-over-bottom');
-                    } else {
-                        target.classList.add('drag-over-top');
-                    }
-                }
-            }, false);
-
-            // DROP - Handle the drop
-            workoutContainer.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
-                if (!dragState.element) return;
-
-                const dropTarget = e.target.closest('.exercise-item, .exercise-group, .drop-zone');
-                if (!dropTarget) return;
-
-                // Remove visual indicators
-                dropTarget.classList.remove('drag-over-top', 'drag-over-bottom');
-
-                // Handle drop zone
-                if (dropTarget.classList.contains('drop-zone')) {
-                    const container = dropTarget.parentElement;
-                    container.insertBefore(dragState.element, dropTarget);
-                    updateExerciseCountsAfterDrag();
-                    cleanupDragState();
-                    return;
-                }
-
-                // Prevent dropping on self
-                if (dragState.element === dropTarget) {
-                    cleanupDragState();
-                    return;
-                }
-
-                // Don't allow dropping exercise directly on group container
-                const isDraggingExercise = dragState.element.classList.contains('exercise-item');
-                const isDropTargetGroup = dropTarget.classList.contains('exercise-group');
-                if (isDraggingExercise && isDropTargetGroup) {
-                    cleanupDragState();
-                    return;
-                }
-
-                // Determine where to insert based on mouse position
-                const rect = dropTarget.getBoundingClientRect();
-                const mouseY = e.clientY;
-                const elementMiddle = rect.top + (rect.height / 2);
-                const targetContainer = dropTarget.parentElement;
-
-                try {
-                    if (mouseY > elementMiddle) {
-                        targetContainer.insertBefore(dragState.element, dropTarget.nextSibling);
-                    } else {
-                        targetContainer.insertBefore(dragState.element, dropTarget);
-                    }
-                    updateExerciseCountsAfterDrag();
-                } catch (error) {
-                    console.error('Error during drop:', error);
-                }
-
-                cleanupDragState();
-            }, false);
-
-            // DRAGLEAVE - Clean up indicators
-            workoutContainer.addEventListener('dragleave', (e) => {
-                const target = e.target.closest('.exercise-item, .exercise-group');
-                if (target && !target.contains(e.relatedTarget)) {
-                    target.classList.remove('drag-over-top', 'drag-over-bottom');
-                }
-            }, false);
-
-            dragState.initialized = true;
-        }
-
-        function updateExerciseCountsAfterDrag() {
-            document.querySelectorAll('.day-card').forEach(dayCard => {
-                const dayId = dayCard.querySelector('.exercise-list').id.replace('exercises-', '');
-                updateExerciseCount(dayId);
-            });
-        }
-
-        function getProgramData() {
-            const days = {};
-
-            document.querySelectorAll('.day-card').forEach(dayCard => {
-                const dayName = dayCard.getAttribute('data-day');
-                const dayDate = dayCard.querySelector('.day-date').value;
-                const items = [];
-
-                const exerciseList = dayCard.querySelector('.exercise-list');
-
-                // Process all children (both individual exercises and groups)
-                exerciseList.childNodes.forEach(node => {
-                    if (node.nodeType === 1) { // Element node
-                        if (node.classList?.contains('exercise-item')) {
-                            // Individual exercise
-                            items.push({
-                                type: 'exercise',
-                                id: node.getAttribute('data-exercise-id'),
-                                name: node.querySelector('.exercise-name').value,
-                                sets: node.querySelector('.sets-input').value,
-                                reps: node.querySelector('.reps-input').value,
-                                weight: node.querySelector('.weight-input').value,
-                                tempo: node.querySelector('.tempo-input').value,
-                                notes: node.querySelector('.notes-input').value
-                            });
-                        } else if (node.classList?.contains('exercise-group')) {
-                            // Exercise group
-                            const groupId = node.getAttribute('data-group-id');
-                            const exercises = [];
-
-                            node.querySelectorAll('.exercise-item').forEach(exercise => {
-                                exercises.push({
-                                    id: exercise.getAttribute('data-exercise-id'),
-                                    name: exercise.querySelector('.exercise-name').value,
-                                    sets: exercise.querySelector('.sets-input').value,
-                                    reps: exercise.querySelector('.reps-input').value,
-                                    weight: exercise.querySelector('.weight-input').value,
-                                    tempo: exercise.querySelector('.tempo-input').value,
-                                    notes: exercise.querySelector('.notes-input').value
-                                });
-                            });
-
-                            items.push({
-                                type: 'group',
-                                id: groupId,
-                                name: node.querySelector('.group-name').value,
-                                exercises: exercises
-                            });
-                        }
-                    }
-                });
-
-                days[dayName] = {
-                    date: dayDate,
-                    items: items
-                };
-            });
-
-            return {
-                id: programId,
-                type: 'strength',
-                name: document.getElementById('programName').value || 'Untitled Strength Program',
-                trainingPhase: document.getElementById('trainingPhase').value,
-                weekNumber: document.getElementById('weekNumber').value,
-                startDate: document.getElementById('startDate').value,
-                endDate: document.getElementById('endDate').value,
-                notes: document.getElementById('programNotes').value,
-                days: days
-            };
-        }
-
-        function loadProgramData(data) {
-            document.getElementById('programName').value = data.name || '';
-            document.getElementById('trainingPhase').value = data.trainingPhase || '';
-            document.getElementById('weekNumber').value = data.weekNumber || '';
-            document.getElementById('startDate').value = data.startDate || '';
-            document.getElementById('endDate').value = data.endDate || '';
-            document.getElementById('programNotes').value = data.notes || '';
-
-            // Reinitialize with program data
-            initializeWorkoutDays(data);
-        }
-
-        function saveProgram(showNotification = false) {
-            const data = getProgramData();
-            const success = storage.saveProgram(data);
-
-            if (showNotification) {
-                if (success) {
-                    showToast('Program saved successfully!', 'success');
-                } else {
-                    showToast('Failed to save program', 'error');
-                }
-            }
-        }
-
-        function exportToImage() {
-            const actionBar = document.querySelector('.action-bar');
-            actionBar.style.display = 'none';
-
-            // Wait for DOM to update before capturing
-            setTimeout(() => {
-                html2canvas(document.body, {
-                    backgroundColor: '#f5f5f5',
-                    scale: 2,
-                    logging: false,
-                    useCORS: true
-                }).then(canvas => {
-                    const link = document.createElement('a');
-                    const programName = document.getElementById('programName').value || 'strength-program';
-                    link.download = `${programName}-${formatDate(new Date())}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-
-                    actionBar.style.display = 'flex';
-                    showToast('Image exported successfully!', 'success');
-                }).catch(error => {
-                    console.error('Export failed:', error);
-                    actionBar.style.display = 'flex';
-                    showToast('Export failed', 'error');
-                });
-            }, 100);
-        }
-
-        function printProgram() {
-            window.print();
-        }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            // Get program ID from URL
-            programId = getQueryParam('id');
-
-            // Load existing program or create new one
-            if (programId) {
-                const existingProgram = storage.getProgram(programId);
-                if (existingProgram) {
-                    loadProgramData(existingProgram);
-                } else {
-                    // New program - initialize empty days
-                    initializeWorkoutDays();
-                }
-            } else {
-                // Generate new ID if not provided
-                programId = generateUUID();
-                initializeWorkoutDays();
-            }
-
-            // Auto-save every 30 seconds
-            setInterval(() => {
-                saveProgram();
-            }, 30000);
+          } else {
+            items.push(readExercise(node));
+          }
         });
+        days[card.dataset.day] = { date: card.querySelector('.day-date').value, items };
+      });
 
-        // Save before leaving
-        window.addEventListener('beforeunload', () => {
-            saveProgram();
+      return {
+        id: programId,
+        type: 'strength',
+        name: document.getElementById('programName').value || 'Untitled Strength Program',
+        trainingPhase: document.getElementById('trainingPhase').value,
+        weekNumber: document.getElementById('weekNumber').value,
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        notes: document.getElementById('programNotes').value,
+        days,
+      };
+    }
+
+    function hydrateMeta(data) {
+      document.getElementById('programName').value = data.name || '';
+      document.getElementById('trainingPhase').value = data.trainingPhase || '';
+      document.getElementById('weekNumber').value = data.weekNumber || '';
+      document.getElementById('startDate').value = data.startDate || '';
+      document.getElementById('endDate').value = data.endDate || '';
+      document.getElementById('programNotes').value = data.notes || '';
+    }
+
+    /* ---------- Drag & drop (handle-initiated, live reorder) ---------- */
+    function getDragAfter(container, y) {
+      const items = [...container.children].filter((c) => c.matches('[data-item]') && !c.classList.contains('dragging'));
+      let closest = { offset: -Infinity, el: null };
+      for (const child of items) {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) closest = { offset, el: child };
+      }
+      return closest.el;
+    }
+
+    function initDragAndDrop() {
+      const root = document.getElementById('workoutDays');
+      let dragged = null;
+
+      root.addEventListener('dragstart', (e) => {
+        const handle = e.target.closest('.drag-handle');
+        if (!handle) return;
+        dragged = handle.closest('[data-item]');
+        if (!dragged) return;
+        dragged.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragged.dataset.id);
+        try { e.dataTransfer.setDragImage(dragged, 12, 12); } catch {}
+      });
+
+      root.addEventListener('dragover', (e) => {
+        if (!dragged) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+
+        const isGroup = dragged.dataset.item === 'group';
+        let list = e.target.closest('.group-items, .item-list');
+        if (!list) return;
+        // Groups live only at the top level; redirect into the day's item list.
+        if (isGroup) list = list.closest('.item-list');
+        if (!list) return;
+
+        const after = getDragAfter(list, e.clientY);
+        if (after == null) list.appendChild(dragged);
+        else list.insertBefore(dragged, after);
+      });
+
+      root.addEventListener('drop', (e) => { if (dragged) e.preventDefault(); });
+
+      root.addEventListener('dragend', () => {
+        if (!dragged) return;
+        dragged.classList.remove('dragging');
+        dragged = null;
+        updateAllCounts();
+        autosave.markDirty();
+      });
+    }
+
+    /* ---------- Structural actions ---------- */
+    function handleAction(action, target) {
+      const day = target.closest('.day');
+      switch (action) {
+        case 'add-exercise':
+          day.querySelector('.item-list').insertAdjacentHTML('beforeend', exerciseHTML());
+          break;
+        case 'add-group':
+          day.querySelector('.item-list').insertAdjacentHTML('beforeend', groupHTML());
+          break;
+        case 'add-to-group':
+          target.closest('.group').querySelector('.group-items').insertAdjacentHTML('beforeend', exerciseHTML());
+          break;
+        case 'remove-exercise':
+          target.closest('.exercise').remove();
+          break;
+        case 'remove-group':
+          target.closest('.group').remove();
+          break;
+        case 'toggle-day':
+          day.classList.toggle('collapsed');
+          saveCollapsed();
+          return; // no data change
+        default:
+          return;
+      }
+      updateAllCounts();
+      autosave.markDirty();
+    }
+
+    /* ---------- Export ---------- */
+    async function exportImage() {
+      const toolbar = document.querySelector('.toolbar');
+      toolbar.style.visibility = 'hidden';
+      try {
+        const canvas = await html2canvas(document.getElementById('capture'), {
+          backgroundColor: getComputedStyle(document.body).backgroundColor,
+          scale: 2,
+          logging: false,
         });
-    </script>
+        const link = document.createElement('a');
+        const name = document.getElementById('programName').value || 'strength-program';
+        link.download = `${name}-${formatDate(new Date())}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('Image exported', 'success');
+      } catch (err) {
+        console.error('Export failed:', err);
+        showToast('Image export failed', 'error');
+      } finally {
+        toolbar.style.visibility = '';
+      }
+    }
+
+    /* ---------- Init ---------- */
+    document.addEventListener('DOMContentLoaded', () => {
+      programId = getQueryParam('id') || generateUUID();
+      const existing = storage.getProgram(programId);
+
+      if (existing) { hydrateMeta(existing); build(existing); }
+      else { build(null); }
+
+      autosave = createAutosave({ getData, statusEl: document.getElementById('saveStatus') });
+      autosave.markClean();
+
+      initDragAndDrop();
+
+      const root = document.getElementById('workoutDays');
+      root.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (btn) handleAction(btn.dataset.action, btn);
+      });
+
+      // Any text change marks the program dirty (debounced save handled centrally).
+      document.querySelector('main').addEventListener('input', (e) => {
+        if (e.target.matches('input, textarea')) autosave.markDirty();
+      });
+
+      document.getElementById('saveBtn').addEventListener('click', () => autosave.save(true));
+      document.getElementById('exportBtn').addEventListener('click', exportImage);
+      document.getElementById('printBtn').addEventListener('click', () => window.print());
+    });
+  </script>
 </body>
 </html>

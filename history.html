@@ -1,482 +1,257 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Training History</title>
-    <link rel="stylesheet" href="styles/main.css">
-    <style>
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f59e0b">
+  <title>History · Training Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4); text-align: center; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+    .stat-label { color: var(--text-muted); font-size: 0.85rem; }
 
-        .header h1 {
-            margin: 0;
-        }
+    .controls { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; margin-bottom: var(--space-4); }
+    .controls .search { flex: 1; min-width: 200px; }
+    .controls select { width: auto; }
 
-        .controls {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-        }
+    .filters { display: flex; gap: 8px; margin-bottom: var(--space-5); flex-wrap: wrap; }
+    .chip {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 550;
+    }
+    .chip:hover { color: var(--text); }
+    .chip.is-active { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
 
-        .controls-row {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            gap: 15px;
-            align-items: end;
-        }
+    .program-grid { display: grid; gap: var(--space-3); }
+    .program-card {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-4);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-5);
+    }
+    .program-card:hover { border-color: var(--border-strong); }
+    .program-card h3 { margin-bottom: 8px; }
+    .program-meta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 0.85rem; color: var(--text-muted); }
+    .program-notes { margin-top: 10px; color: var(--text-muted); font-size: 0.88rem; }
+    .program-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 
-        .search-box {
-            position: relative;
-        }
-
-        .search-box input {
-            padding-right: 40px;
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 8px 16px;
-            border: 2px solid var(--border-color);
-            background: white;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .filter-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .stats-bar {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-            text-align: center;
-        }
-
-        .stat-item {
-            padding: 10px;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .program-grid {
-            display: grid;
-            gap: 20px;
-        }
-
-        .program-card {
-            background-color: var(--card-background);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            padding: 20px;
-            transition: var(--transition);
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 20px;
-            align-items: start;
-        }
-
-        .program-card:hover {
-            box-shadow: var(--shadow-hover);
-            transform: translateY(-2px);
-        }
-
-        .program-info h3 {
-            margin-bottom: 10px;
-            color: var(--text-primary);
-        }
-
-        .program-type {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-right: 10px;
-        }
-
-        .type-strength {
-            background-color: #fce4ec;
-            color: #c2185b;
-        }
-
-        .type-general {
-            background-color: #f3e5f5;
-            color: #7b1fa2;
-        }
-
-        .program-meta {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .program-meta span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .program-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state-icon {
-            font-size: 5rem;
-            margin-bottom: 20px;
-            opacity: 0.3;
-        }
-
-        .bulk-actions {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--card-background);
-            padding: 15px 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-hover);
-            display: none;
-            gap: 10px;
-            z-index: 100;
-        }
-
-        .bulk-actions.visible {
-            display: flex;
-        }
-
-        @media (max-width: 768px) {
-            .controls-row {
-                grid-template-columns: 1fr;
-            }
-
-            .program-card {
-                grid-template-columns: 1fr;
-            }
-
-            .program-actions {
-                flex-direction: row;
-            }
-        }
-    </style>
+    @media (max-width: 640px) {
+      .program-card { flex-direction: column; }
+      .program-actions { flex-direction: row; flex-wrap: wrap; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container-wide">
-        <div class="header">
-            <h1>Training History</h1>
-            <div class="btn-group">
-                <button class="btn btn-secondary" onclick="window.location.href='index.html'">← Back to Dashboard</button>
-                <button class="btn btn-primary" onclick="exportAllData()">Export All Data</button>
-                <button class="btn btn-outline" onclick="importData()">Import Data</button>
-            </div>
-        </div>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">TD</span>
+        <span class="brand-name">Training Dashboard</span>
+      </a>
+      <nav class="appbar-nav">
+        <a href="index.html">Dashboard</a>
+        <a href="history.html">History</a>
+      </nav>
+    </div>
+  </header>
 
-        <div class="stats-bar" id="statsBar">
-            <div class="stat-item">
-                <div class="stat-value" id="totalPrograms">0</div>
-                <div class="stat-label">Total Programs</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="strengthPrograms">0</div>
-                <div class="stat-label">Strength</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="weeklyPrograms">0</div>
-                <div class="stat-label">Weekly</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value" id="totalHours">0h</div>
-                <div class="stat-label">Total Hours</div>
-            </div>
-        </div>
-
-        <div class="controls">
-            <div class="controls-row">
-                <div class="search-box">
-                    <label>Search Programs</label>
-                    <input type="text" id="searchInput" placeholder="Search by name, notes, or type..." oninput="filterPrograms()">
-                </div>
-                <div>
-                    <label>Sort By</label>
-                    <select id="sortSelect" onchange="filterPrograms()">
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="name">Name (A-Z)</option>
-                        <option value="type">Type</option>
-                    </select>
-                </div>
-                <div>
-                    <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
-                <button class="filter-btn" data-filter="strength" onclick="setFilter('strength')">Strength</button>
-                <button class="filter-btn" data-filter="general" onclick="setFilter('general')">Weekly</button>
-            </div>
-        </div>
-
-        <div class="program-grid" id="programGrid">
-            <div class="empty-state">
-                <div class="empty-state-icon">📭</div>
-                <h2>No programs found</h2>
-                <p>Create your first training program to get started!</p>
-            </div>
-        </div>
+  <main class="page page--wide">
+    <div class="toolbar">
+      <h1>History</h1>
+      <div class="toolbar-spacer"></div>
+      <button class="btn" id="exportBtn">Export backup</button>
+      <button class="btn btn-ghost" id="importBtn">Import</button>
+      <button class="btn btn-danger" id="clearBtn">Clear all</button>
     </div>
 
-    <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Programs</div></div>
+      <div class="stat-card"><div class="stat-value" id="statStrength">0</div><div class="stat-label">Strength</div></div>
+      <div class="stat-card"><div class="stat-value" id="statWeekly">0</div><div class="stat-label">Weekly</div></div>
+      <div class="stat-card"><div class="stat-value" id="statHours">0h</div><div class="stat-label">Hours planned</div></div>
+    </div>
 
-    <script src="scripts/utils.js"></script>
-    <script src="scripts/storage.js"></script>
-    <script>
-        let currentFilter = 'all';
-        let allPrograms = [];
+    <div class="controls">
+      <input class="search" type="search" id="searchInput" placeholder="Search by name or notes…" aria-label="Search programs">
+      <select id="sortSelect" aria-label="Sort by">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="name">Name (A–Z)</option>
+        <option value="type">Type</option>
+      </select>
+    </div>
 
-        function loadPrograms() {
-            allPrograms = storage.getAllPrograms();
-            updateStats();
-            filterPrograms();
+    <div class="filters" id="filters">
+      <button class="chip is-active" data-filter="all">All</button>
+      <button class="chip" data-filter="strength">Strength</button>
+      <button class="chip" data-filter="general">Weekly</button>
+    </div>
+
+    <div class="program-grid" id="programGrid"></div>
+  </main>
+
+  <input type="file" id="importFile" accept=".json,application/json" class="hidden">
+
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/app.js"></script>
+  <script>
+    const PAGE_FOR_TYPE = { strength: 'strength-template.html', general: 'weekly_training_program_template.html' };
+    let currentFilter = 'all';
+
+    function renderStats() {
+      const stats = storage.getStats();
+      document.getElementById('statTotal').textContent = stats.totalPrograms;
+      document.getElementById('statStrength').textContent = stats.byType.strength || 0;
+      document.getElementById('statWeekly').textContent = stats.byType.general || 0;
+      document.getElementById('statHours').textContent = `${stats.totalHours.toFixed(1)}h`;
+    }
+
+    function visiblePrograms() {
+      let programs = storage.getAllPrograms();
+
+      if (currentFilter !== 'all') {
+        programs = programs.filter((p) => (p.type || 'general') === currentFilter);
+      }
+
+      const term = document.getElementById('searchInput').value.trim().toLowerCase();
+      if (term) {
+        programs = programs.filter((p) =>
+          [p.name, p.type, p.notes].some((v) => (v || '').toLowerCase().includes(term)));
+      }
+
+      const sort = document.getElementById('sortSelect').value;
+      programs.sort((a, b) => {
+        switch (sort) {
+          case 'oldest': return (a.lastModified || 0) - (b.lastModified || 0);
+          case 'name': return (a.name || '').localeCompare(b.name || '');
+          case 'type': return (a.type || '').localeCompare(b.type || '');
+          default: return (b.lastModified || 0) - (a.lastModified || 0);
         }
+      });
+      return programs;
+    }
 
-        function updateStats() {
-            const stats = storage.getStats();
+    function render() {
+      renderStats();
+      const grid = document.getElementById('programGrid');
+      const programs = visiblePrograms();
 
-            document.getElementById('totalPrograms').textContent = stats.totalPrograms;
-            document.getElementById('strengthPrograms').textContent = stats.byType.strength || 0;
-            document.getElementById('weeklyPrograms').textContent = stats.byType.general || 0;
-            document.getElementById('totalHours').textContent = stats.totalHours.toFixed(1) + 'h';
+      if (programs.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <h2>No programs found</h2>
+            <p>Try a different search or filter, or create one from the dashboard.</p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = programs.map((p) => {
+        const type = p.type === 'strength' ? 'strength' : 'general';
+        const typeLabel = type === 'strength' ? 'Strength' : 'Weekly';
+        const notes = (p.notes || '').trim();
+        return `
+          <div class="program-card" data-id="${p.id}" data-type="${type}">
+            <div>
+              <h3>${sanitizeHTML(p.name || 'Untitled Program')}</h3>
+              <span class="badge badge-${type}">${typeLabel}</span>
+              ${p.weekNumber ? `<span class="badge">Week ${sanitizeHTML(p.weekNumber)}</span>` : ''}
+              <div class="program-meta">
+                <span>Updated ${formatDateReadable(p.lastModified)}</span>
+                ${p.totalHours ? `<span>${sanitizeHTML(p.totalHours)}h planned</span>` : ''}
+                ${p.startDate ? `<span>Starts ${formatDateReadable(p.startDate)}</span>` : ''}
+              </div>
+              ${notes ? `<p class="program-notes">${sanitizeHTML(notes.slice(0, 160))}${notes.length > 160 ? '…' : ''}</p>` : ''}
+            </div>
+            <div class="program-actions">
+              <button class="btn btn-sm btn-primary" data-action="open">Open</button>
+              <button class="btn btn-sm" data-action="duplicate">Duplicate</button>
+              <button class="btn btn-sm btn-danger" data-action="delete">Delete</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      render();
+
+      document.getElementById('searchInput').addEventListener('input', debounce(render, 200));
+      document.getElementById('sortSelect').addEventListener('change', render);
+
+      document.getElementById('filters').addEventListener('click', (e) => {
+        const chip = e.target.closest('.chip');
+        if (!chip) return;
+        currentFilter = chip.dataset.filter;
+        document.querySelectorAll('.chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+        render();
+      });
+
+      document.getElementById('programGrid').addEventListener('click', async (e) => {
+        const card = e.target.closest('.program-card');
+        const action = e.target.closest('[data-action]')?.dataset.action;
+        if (!card || !action) return;
+        const { id, type } = card.dataset;
+
+        if (action === 'open') {
+          window.location.href = `${PAGE_FOR_TYPE[type] || PAGE_FOR_TYPE.general}?id=${encodeURIComponent(id)}`;
+        } else if (action === 'duplicate') {
+          storage.duplicateProgram(id) ? showToast('Program duplicated', 'success') : showToast('Could not duplicate', 'error');
+          render();
+        } else if (action === 'delete') {
+          if (await showConfirm('Delete this program? This cannot be undone.', { confirmLabel: 'Delete' })) {
+            storage.deleteProgram(id);
+            showToast('Program deleted', 'success');
+            render();
+          }
         }
+      });
 
-        function setFilter(filter) {
-            currentFilter = filter;
+      document.getElementById('exportBtn').addEventListener('click', () => {
+        downloadFile(storage.exportAll(), `training-programs-${formatDate(new Date())}.json`);
+        showToast('Backup exported', 'success');
+      });
 
-            // Update button states
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+      const fileInput = document.getElementById('importFile');
+      document.getElementById('importBtn').addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = storage.importPrograms(reader.result, true);
+          showToast(result.message, result.success ? 'success' : 'error');
+          if (result.success) render();
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      });
 
-            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
-
-            filterPrograms();
-        }
-
-        function filterPrograms() {
-            let programs = [...allPrograms];
-
-            // Apply type filter
-            if (currentFilter !== 'all') {
-                programs = programs.filter(p => p.type === currentFilter);
-            }
-
-            // Apply search
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            if (searchTerm) {
-                programs = programs.filter(p => {
-                    const name = (p.name || '').toLowerCase();
-                    const type = (p.type || '').toLowerCase();
-                    const notes = (p.notes || '').toLowerCase();
-                    return name.includes(searchTerm) || type.includes(searchTerm) || notes.includes(searchTerm);
-                });
-            }
-
-            // Apply sort
-            const sortBy = document.getElementById('sortSelect').value;
-            programs.sort((a, b) => {
-                switch (sortBy) {
-                    case 'newest':
-                        return b.lastModified - a.lastModified;
-                    case 'oldest':
-                        return a.lastModified - b.lastModified;
-                    case 'name':
-                        return (a.name || '').localeCompare(b.name || '');
-                    case 'type':
-                        return (a.type || '').localeCompare(b.type || '');
-                    default:
-                        return 0;
-                }
-            });
-
-            renderPrograms(programs);
-        }
-
-        function renderPrograms(programs) {
-            const grid = document.getElementById('programGrid');
-
-            if (programs.length === 0) {
-                grid.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <h2>No programs found</h2>
-                        <p>Try adjusting your search or filters.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            grid.innerHTML = programs.map(program => {
-                const type = program.type || 'general';
-                const typeClass = `type-${type}`;
-
-                return `
-                    <div class="program-card">
-                        <div class="program-info">
-                            <h3>${sanitizeHTML(program.name || 'Untitled Program')}</h3>
-                            <div>
-                                <span class="program-type ${typeClass}">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                                ${program.weekNumber ? `<span class="program-type" style="background: #e0e0e0; color: #333;">Week ${program.weekNumber}</span>` : ''}
-                            </div>
-                            <div class="program-meta">
-                                <span>📅 ${formatDateReadable(program.lastModified)}</span>
-                                ${program.totalHours ? `<span>⏱️ ${program.totalHours}h</span>` : ''}
-                                ${program.startDate ? `<span>📍 ${formatDateReadable(program.startDate)}</span>` : ''}
-                            </div>
-                            ${program.notes ? `<p style="margin-top: 10px; color: var(--text-secondary); font-size: 0.9rem;">${sanitizeHTML(program.notes.substring(0, 150))}${program.notes.length > 150 ? '...' : ''}</p>` : ''}
-                        </div>
-                        <div class="program-actions">
-                            <button class="btn btn-small btn-primary" onclick="openProgram('${program.id}', '${program.type}')">
-                                Open
-                            </button>
-                            <button class="btn btn-small btn-outline" onclick="duplicateProgram('${program.id}')">
-                                Duplicate
-                            </button>
-                            <button class="btn btn-small btn-danger" onclick="deleteProgram('${program.id}')">
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function openProgram(id, type) {
-            const page = type === 'strength' ? 'strength-template.html' :
-                        'weekly_training_program_template.html';
-            window.location.href = `${page}?id=${id}`;
-        }
-
-        async function deleteProgram(id) {
-            const confirmed = await showConfirm('Are you sure you want to delete this program? This action cannot be undone.');
-
-            if (confirmed) {
-                storage.deleteProgram(id);
-                showToast('Program deleted successfully', 'success');
-                loadPrograms();
-            }
-        }
-
-        function duplicateProgram(id) {
-            const duplicate = storage.duplicateProgram(id);
-
-            if (duplicate) {
-                showToast('Program duplicated successfully', 'success');
-                loadPrograms();
-            } else {
-                showToast('Failed to duplicate program', 'error');
-            }
-        }
-
-        function exportAllData() {
-            const data = storage.exportAll();
-            downloadFile(data, `training-programs-export-${formatDate(new Date())}.json`, 'application/json');
-            showToast('Data exported successfully', 'success');
-        }
-
-        function importData() {
-            document.getElementById('importFileInput').click();
-        }
-
-        function handleImportFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-
-            reader.onload = function(e) {
-                try {
-                    const result = storage.importPrograms(e.target.result, true);
-
-                    if (result.success) {
-                        showToast(`Successfully imported ${result.count} programs`, 'success');
-                        loadPrograms();
-                    } else {
-                        showToast(result.message, 'error');
-                    }
-                } catch (error) {
-                    showToast('Import failed: Invalid file format', 'error');
-                }
-            };
-
-            reader.readAsText(file);
-
-            // Reset input
-            event.target.value = '';
-        }
-
-        async function clearAllData() {
-            const confirmed = await showConfirm('Are you sure you want to delete ALL programs? This action cannot be undone!');
-
-            if (confirmed) {
-                const doubleConfirm = await showConfirm('This will permanently delete all your training data. Are you absolutely sure?');
-
-                if (doubleConfirm) {
-                    storage.clearAllPrograms();
-                    showToast('All data cleared', 'success');
-                    loadPrograms();
-                }
-            }
-        }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            loadPrograms();
-        });
-    </script>
+      document.getElementById('clearBtn').addEventListener('click', async () => {
+        if (!(await showConfirm('Delete ALL programs? This cannot be undone.', { confirmLabel: 'Delete all' }))) return;
+        if (!(await showConfirm('This permanently removes every saved program. Are you sure?', { confirmLabel: 'Yes, delete everything' }))) return;
+        storage.clearAllPrograms();
+        showToast('All programs cleared', 'success');
+        render();
+      });
+    });
+  </script>
 </body>
 </html>

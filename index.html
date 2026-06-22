@@ -1,393 +1,254 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Training program dashboard for strength and weekly training">
-    <meta name="theme-color" content="#28a745">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Training Dashboard</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="styles/main.css">
-    <style>
-        .hero {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            margin: -20px -20px 30px -20px;
-            border-radius: 0 0 var(--border-radius) var(--border-radius);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard for planning strength and weekly training programs">
+  <meta name="theme-color" content="#f59e0b">
+  <title>Training Dashboard</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    .lede { color: var(--text-muted); margin-top: 4px; }
 
-        .hero h1 {
-            color: white;
-            font-size: 2.5rem;
-            margin-bottom: 0;
-        }
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-4);
+      margin-top: var(--space-5);
+    }
+    .action-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-5);
+      cursor: pointer;
+      transition: border-color var(--transition), transform var(--transition), background var(--transition);
+    }
+    .action-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .action-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .action-card .icon { font-size: 1.6rem; }
+    .action-card h3 { margin: 0; }
+    .action-card p { color: var(--text-muted); font-size: 0.9rem; }
 
-        .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            color: white;
-        }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-3);
+      margin-top: var(--space-5);
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+      text-align: center;
+    }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+    .stat-label { color: var(--text-muted); font-size: 0.85rem; }
 
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
+    .program-list { display: flex; flex-direction: column; gap: 10px; margin-top: var(--space-4); }
+    .program-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .program-row-main { flex: 1; min-width: 0; }
+    .program-row-title { font-weight: 600; }
+    .program-row-meta {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-top: 4px; font-size: 0.85rem; color: var(--text-muted);
+    }
+    .program-row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-        .action-card {
-            background: var(--card-background);
-            border-radius: var(--border-radius);
-            padding: 30px;
-            text-align: center;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
+    .status-select {
+      width: auto;
+      padding: 5px 26px 5px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: var(--radius-pill);
+      border-color: transparent;
+    }
+    .status-select[data-status="draft"]    { background-color: color-mix(in srgb, var(--status-draft) 25%, var(--surface-2)); color: var(--text); }
+    .status-select[data-status="active"]   { background-color: color-mix(in srgb, var(--status-active) 22%, var(--surface-2)); color: #8ff0b0; }
+    .status-select[data-status="complete"] { background-color: color-mix(in srgb, var(--status-complete) 22%, var(--surface-2)); color: #9cc4ff; }
 
-        .action-card:hover {
-            box-shadow: var(--shadow-hover);
-            transform: translateY(-5px);
-            border-color: var(--primary-color);
-        }
-
-        .action-card-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-
-        .action-card h3 {
-            margin-bottom: 10px;
-            color: var(--text-primary);
-        }
-
-        .action-card p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .recent-programs {
-            margin-top: 40px;
-        }
-
-        .program-list {
-            display: grid;
-            gap: 15px;
-        }
-
-        .program-item {
-            background: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: var(--transition);
-        }
-
-        .program-item:hover {
-            box-shadow: var(--shadow-hover);
-            transform: translateX(5px);
-        }
-
-        .program-info h4 {
-            margin-bottom: 5px;
-            color: var(--text-primary);
-        }
-
-        .program-meta {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .program-actions {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .status-select {
-            padding: 6px 10px;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            font-weight: 500;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: var(--transition);
-            min-width: 90px;
-        }
-
-        .status-select:hover {
-            opacity: 0.9;
-        }
-
-        .status-select option {
-            background-color: white;
-            color: #333;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.3;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: var(--card-background);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 1.8rem;
-            }
-
-            .hero p {
-                font-size: 1rem;
-            }
-
-            .quick-actions {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    @media (max-width: 640px) {
+      .program-row { flex-direction: column; align-items: stretch; }
+      .program-row-actions { flex-wrap: wrap; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="hero">
-            <h1>Training Dashboard</h1>
-        </div>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">TD</span>
+        <span class="brand-name">Training Dashboard</span>
+      </a>
+      <nav class="appbar-nav">
+        <a href="index.html">Dashboard</a>
+        <a href="history.html">History</a>
+      </nav>
+    </div>
+  </header>
 
-        <section class="quick-actions">
-            <div class="action-card" onclick="createNewProgram('strength')">
-                <div class="action-card-icon">💪</div>
-                <h3>Strength Program</h3>
-                <p>Build a strength training program with exercises and sets</p>
-            </div>
-
-            <div class="action-card" onclick="createNewProgram('general')">
-                <div class="action-card-icon">📋</div>
-                <h3>Weekly Training</h3>
-                <p>Use the flexible weekly training template</p>
-            </div>
-
-            <div class="action-card" onclick="window.location.href='history.html'">
-                <div class="action-card-icon">📊</div>
-                <h3>View History</h3>
-                <p>Browse and manage your past training programs</p>
-            </div>
-        </section>
-
-        <section class="stats-grid" id="statsSection">
-            <div class="stat-card">
-                <div class="stat-value" id="totalPrograms">0</div>
-                <div class="stat-label">Total Programs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="strengthPrograms">0</div>
-                <div class="stat-label">Strength Programs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalWeeks">0</div>
-                <div class="stat-label">Weeks Planned</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalHours">0</div>
-                <div class="stat-label">Total Hours</div>
-            </div>
-        </section>
-
-        <section class="recent-programs">
-            <h2>Recent Programs</h2>
-            <div class="program-list" id="recentPrograms">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📭</div>
-                    <p>No programs yet. Create your first training program above!</p>
-                </div>
-            </div>
-        </section>
+  <main class="page">
+    <div>
+      <h1>Plan your training</h1>
+      <p class="lede">Create a program, then pick up where you left off.</p>
     </div>
 
-    <script src="scripts/utils.js"></script>
-    <script src="scripts/storage.js"></script>
-    <script>
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('Service Worker registered'))
-                .catch(err => console.log('Service Worker registration failed:', err));
+    <section class="actions-grid" aria-label="Create a program">
+      <button class="action-card" data-create="strength">
+        <span class="icon">🏋️</span>
+        <h3>Strength Program</h3>
+        <p>Days, exercises, sets, reps, tempo and supersets.</p>
+      </button>
+      <button class="action-card" data-create="general">
+        <span class="icon">📋</span>
+        <h3>Weekly Training</h3>
+        <p>A full week of sessions with times and volume totals.</p>
+      </button>
+      <a class="action-card" href="history.html">
+        <span class="icon">📚</span>
+        <h3>History</h3>
+        <p>Browse, search and manage every saved program.</p>
+      </a>
+    </section>
+
+    <section class="stats-grid" aria-label="Summary">
+      <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Programs</div></div>
+      <div class="stat-card"><div class="stat-value" id="statStrength">0</div><div class="stat-label">Strength</div></div>
+      <div class="stat-card"><div class="stat-value" id="statWeekly">0</div><div class="stat-label">Weekly</div></div>
+      <div class="stat-card"><div class="stat-value" id="statHours">0h</div><div class="stat-label">Hours planned</div></div>
+    </section>
+
+    <section>
+      <h2 style="margin-top: var(--space-6);">Recent programs</h2>
+      <div class="program-list" id="recentList"></div>
+    </section>
+  </main>
+
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/storage.js"></script>
+  <script src="scripts/app.js"></script>
+  <script>
+    const PAGE_FOR_TYPE = {
+      strength: 'strength-template.html',
+      general: 'weekly_training_program_template.html',
+    };
+
+    function createProgram(type) {
+      const page = PAGE_FOR_TYPE[type];
+      if (page) window.location.href = `${page}?id=${generateUUID()}&new=true`;
+    }
+
+    function openProgram(id, type) {
+      window.location.href = `${PAGE_FOR_TYPE[type] || PAGE_FOR_TYPE.general}?id=${encodeURIComponent(id)}`;
+    }
+
+    function renderRecent() {
+      const list = document.getElementById('recentList');
+      const programs = storage.getAllPrograms()
+        .sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0))
+        .slice(0, 5);
+
+      if (programs.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>No programs yet. Create your first one above.</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = programs.map((p) => {
+        const status = p.status || 'draft';
+        const typeLabel = p.type === 'strength' ? 'Strength' : 'Weekly';
+        return `
+          <div class="program-row" data-id="${p.id}" data-type="${sanitizeHTML(p.type || 'general')}">
+            <div class="program-row-main">
+              <div class="program-row-title">${sanitizeHTML(p.name || 'Untitled Program')}</div>
+              <div class="program-row-meta">
+                <span class="badge badge-${p.type === 'strength' ? 'strength' : 'general'}">${typeLabel}</span>
+                <span>Updated ${formatDateReadable(p.lastModified)}</span>
+              </div>
+            </div>
+            <div class="program-row-actions">
+              <select class="status-select" data-status="${status}" aria-label="Status">
+                <option value="draft" ${status === 'draft' ? 'selected' : ''}>Draft</option>
+                <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
+                <option value="complete" ${status === 'complete' ? 'selected' : ''}>Complete</option>
+              </select>
+              <button class="btn btn-sm btn-primary" data-action="open">Open</button>
+              <button class="btn btn-sm" data-action="duplicate">Duplicate</button>
+              <button class="btn btn-sm btn-danger" data-action="delete">Delete</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderStats() {
+      const programs = storage.getAllPrograms();
+      const hours = programs.reduce((sum, p) => sum + (parseFloat(p.totalHours) || 0), 0);
+      document.getElementById('statTotal').textContent = programs.length;
+      document.getElementById('statStrength').textContent = programs.filter((p) => p.type === 'strength').length;
+      document.getElementById('statWeekly').textContent = programs.filter((p) => p.type !== 'strength').length;
+      document.getElementById('statHours').textContent = `${hours.toFixed(1)}h`;
+    }
+
+    function refresh() { renderStats(); renderRecent(); }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      refresh();
+
+      document.querySelectorAll('[data-create]').forEach((card) => {
+        card.addEventListener('click', () => createProgram(card.dataset.create));
+      });
+
+      const list = document.getElementById('recentList');
+
+      list.addEventListener('click', async (e) => {
+        const row = e.target.closest('.program-row');
+        const action = e.target.closest('[data-action]')?.dataset.action;
+        if (!row || !action) return;
+        const { id, type } = row.dataset;
+
+        if (action === 'open') {
+          openProgram(id, type);
+        } else if (action === 'duplicate') {
+          storage.duplicateProgram(id) ? showToast('Program duplicated', 'success') : showToast('Could not duplicate', 'error');
+          refresh();
+        } else if (action === 'delete') {
+          if (await showConfirm('Delete this program? This cannot be undone.', { confirmLabel: 'Delete' })) {
+            storage.deleteProgram(id);
+            showToast('Program deleted', 'success');
+            refresh();
+          }
         }
+      });
 
-        function createNewProgram(type) {
-            const timestamp = Date.now();
-            const id = generateUUID();
-
-            switch(type) {
-                case 'strength':
-                    window.location.href = `strength-template.html?id=${id}&new=true`;
-                    break;
-                case 'general':
-                    window.location.href = `weekly_training_program_template.html?id=${id}&new=true`;
-                    break;
-            }
+      list.addEventListener('change', (e) => {
+        const select = e.target.closest('.status-select');
+        const row = e.target.closest('.program-row');
+        if (!select || !row) return;
+        const program = storage.getProgram(row.dataset.id);
+        if (program) {
+          program.status = select.value;
+          storage.saveProgram(program);
+          select.dataset.status = select.value;
         }
-
-        function loadRecentPrograms() {
-            const programs = storage.getAllPrograms();
-            const recentProgramsDiv = document.getElementById('recentPrograms');
-
-            if (programs.length === 0) {
-                recentProgramsDiv.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <p>No programs yet. Create your first training program above!</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Sort by last modified, take top 5
-            const recent = programs
-                .sort((a, b) => b.lastModified - a.lastModified)
-                .slice(0, 5);
-
-            recentProgramsDiv.innerHTML = recent.map(program => {
-                const status = program.status || 'draft';
-                const statusColors = {
-                    draft: '#6c757d',
-                    active: '#28a745',
-                    complete: '#007bff'
-                };
-
-                return `
-                <div class="program-item">
-                    <div class="program-info">
-                        <h4>${sanitizeHTML(program.name || 'Untitled Program')}</h4>
-                        <div class="program-meta">
-                            ${program.type ? `<span>${sanitizeHTML(program.type)}</span> • ` : ''}
-                            <span>Modified ${formatDateReadable(program.lastModified)}</span>
-                            ${program.weekNumber ? ` • Week ${program.weekNumber}` : ''}
-                        </div>
-                    </div>
-                    <div class="program-actions">
-                        <select class="status-select" onchange="updateProgramStatus('${program.id}', this.value)" style="background-color: ${statusColors[status]};">
-                            <option value="draft" ${status === 'draft' ? 'selected' : ''}>Draft</option>
-                            <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
-                            <option value="complete" ${status === 'complete' ? 'selected' : ''}>Complete</option>
-                        </select>
-                        <button class="btn btn-small btn-primary" onclick="openProgram('${program.id}', '${program.type}')">
-                            Open
-                        </button>
-                        <button class="btn btn-small btn-secondary" onclick="copyProgram('${program.id}')">
-                            Duplicate
-                        </button>
-                        <button class="btn btn-small btn-danger" onclick="deleteProgram('${program.id}')">
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            `;
-            }).join('');
-        }
-
-        function openProgram(id, type) {
-            const page = type === 'strength' ? 'strength-template.html' :
-                        'weekly_training_program_template.html';
-            window.location.href = `${page}?id=${id}`;
-        }
-
-        function copyProgram(id) {
-            const newProgram = storage.duplicateProgram(id);
-            if (newProgram) {
-                loadRecentPrograms();
-                updateStats();
-                showToast('Program duplicated successfully!', 'success');
-            } else {
-                showToast('Failed to duplicate program', 'error');
-            }
-        }
-
-        function updateProgramStatus(id, status) {
-            const program = storage.getProgram(id);
-            if (program) {
-                program.status = status;
-                storage.saveProgram(program);
-                loadRecentPrograms();
-                showToast('Status updated', 'success');
-            }
-        }
-
-        async function deleteProgram(id) {
-            const confirmed = await showConfirm('Are you sure you want to delete this program?');
-            if (confirmed) {
-                storage.deleteProgram(id);
-                loadRecentPrograms();
-                updateStats();
-                showToast('Program deleted', 'success');
-            }
-        }
-
-        function updateStats() {
-            const programs = storage.getAllPrograms();
-
-            document.getElementById('totalPrograms').textContent = programs.length;
-
-            let strengthCount = 0;
-            let totalWeeks = 0;
-            let totalHours = 0;
-
-            programs.forEach(program => {
-                if (program.type === 'strength') strengthCount++;
-                if (program.weekNumber) totalWeeks++;
-                if (program.totalHours) totalHours += parseFloat(program.totalHours);
-            });
-
-            document.getElementById('strengthPrograms').textContent = strengthCount;
-            document.getElementById('totalWeeks').textContent = totalWeeks;
-            document.getElementById('totalHours').textContent = totalHours.toFixed(1) + 'h';
-        }
-
-        // Load data on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            loadRecentPrograms();
-            updateStats();
-        });
-    </script>
+      });
+    });
+  </script>
 </body>
 </html>

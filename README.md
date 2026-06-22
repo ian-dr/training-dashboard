@@ -1,72 +1,58 @@
 # Training Dashboard
 
-A Progressive Web App for managing strength and general training programs.
+A small, offline-capable Progressive Web App for planning strength and weekly
+training programs. Built with plain HTML, CSS and JavaScript — no build step.
 
 ## Features
 
-- **Multiple Template Types**
-  - Strength training programs with exercise, sets, reps, and tempo tracking
-  - Weekly training template for flexible planning
+- **Two program types**
+  - *Strength* — days, exercises, sets/reps/load/tempo, supersets (groups), and
+    drag-to-reorder.
+  - *Weekly* — a full week of sessions with start times, training models,
+    comments and automatic minute/hour totals.
+- **Reliable autosave** — changes save automatically (debounced) and again when
+  the page is hidden or closed, with a live "Saved / Saving / Unsaved" indicator.
+- **History** — search, filter and sort every saved program; duplicate or delete.
+- **Backup** — export all programs to a JSON file and re-import it later.
+- **Export & print** — save a program as a PNG image or print it.
+- **Works offline** — a service worker caches the app shell and all assets
+  (including the image-export library, which is vendored locally).
 
-- **Dark Mode**
-  - Always-on dark mode for comfortable viewing
+All data is stored locally in your browser's `localStorage`; nothing is sent
+anywhere.
 
-- **Auto-Save**
-  - Programs automatically save every 30 seconds
-  - Data persists in browser localStorage
+## Running locally
 
-- **Export Options**
-  - Export individual programs as PNG images
-  - Export all data as JSON for backup
-  - Import JSON files to restore data
+The app is fully static. Serve the folder over HTTP (a service worker won't run
+from `file://`):
 
-- **Offline Support**
-  - Works offline as a Progressive Web App
-  - Service worker caches all resources
+```bash
+# Python 3
+python -m http.server 8000
 
-## Getting Started
+# or Node
+npx serve .
+```
 
-1. Open `index.html` in your web browser
-2. Click on a training type card to create a new program
-3. Fill in your training details
-4. Programs save automatically
+Then open http://localhost:8000.
 
-## Usage Tips
+## Project layout
 
-- **Navigation**: Use the "Back to Dashboard" button to return to the home page
-- **History**: View all saved programs in the History page
-- **Search**: Use the search bar in History to find specific programs
-- **Duplicate**: Clone existing programs to save time
-- **Export**: Back up your data regularly using the Export feature
+| File | Purpose |
+| --- | --- |
+| `index.html` | Dashboard: create programs, recent list, summary stats |
+| `history.html` | Browse, search, back up and manage programs |
+| `strength-template.html` | Strength program editor |
+| `weekly_training_program_template.html` | Weekly schedule editor |
+| `styles/main.css` | Design system (single source of truth) |
+| `scripts/utils.js` | Shared helpers (toasts, dialogs, formatting) |
+| `scripts/storage.js` | `localStorage` persistence layer |
+| `scripts/app.js` | Service-worker registration, nav state, autosave controller |
+| `sw.js` | Service worker (offline + update strategy) |
+| `vendor/html2canvas.min.js` | Local copy of the image-export library |
 
-## Browser Compatibility
+## Data & backups
 
-Works best in modern browsers:
-- Chrome/Edge (recommended)
-- Firefox
-- Safari
-
-## Data Storage
-
-All data is stored locally in your browser's localStorage. To back up your data:
-1. Go to History page
-2. Click "Export All Data"
-3. Save the JSON file
-
-To restore data:
-1. Go to History page
-2. Click "Import Data"
-3. Select your backup JSON file
-
-## Development
-
-Built with vanilla HTML, CSS, and JavaScript. No build process required.
-
-Files:
-- `index.html` - Main dashboard
-- `strength-template.html` - Strength program template
-- `weekly_training_program_template.html` - Weekly training template
-- `history.html` - Program history and management
-- `styles/main.css` - Global styles with dark mode
-- `scripts/storage.js` - Data persistence layer
-- `scripts/utils.js` - Utility functions
+Use **History → Export backup** to download a JSON snapshot of every program,
+and **Import** to restore it. Keep a backup before clearing data or switching
+browsers, since storage is per-browser.
