@@ -355,4 +355,11 @@ select {
   .appbar, .toolbar, .toast-host, .modal, .no-print { display: none !important; }
   .page { padding: 0; max-width: none; }
   .card { border: 1px solid #ccc; }
+  /* Inputs use light text on screen; force readable ink on paper. */
+  input, textarea, select {
+    color: #000 !important;
+    background: #fff !important;
+    border-color: #bbb !important;
+  }
+  input::placeholder, textarea::placeholder { color: transparent !important; }
 }

@@ -38,6 +38,7 @@
     }
     .day.collapsed .day-toggle { transform: rotate(-90deg); }
     .day.collapsed .day-body { display: none; }
+    .day-head .export-day { margin-left: auto; }
 
     .item-list { display: flex; flex-direction: column; gap: 10px; }
 
@@ -83,6 +84,15 @@
       .group-actions { margin-left: 0; }
       .group-head { flex-wrap: wrap; }
     }
+
+    /* Printing the whole program: expand collapsed days, hide editing chrome. */
+    @media print {
+      .day.collapsed .day-body { display: block !important; }
+      .day-toggle, .day-actions, .export-day, .drag-handle,
+      .group-actions, .exercise-top .btn-danger { display: none !important; }
+      .day { break-inside: avoid; page-break-inside: avoid; }
+      .exercise { border-left-color: #999; }
+    }
   </style>
 </head>
 <body>
@@ -103,8 +113,7 @@
     <div class="toolbar">
       <a class="btn btn-ghost" href="index.html">← Dashboard</a>
       <button class="btn btn-primary" id="saveBtn">Save</button>
-      <button class="btn" id="exportBtn">Export image</button>
-      <button class="btn" id="printBtn">Print</button>
+      <button class="btn" id="printBtn">Print all</button>
       <div class="toolbar-spacer"></div>
       <span class="save-status" id="saveStatus" data-state="saved">Saved</span>
     </div>
@@ -202,6 +211,7 @@
             <h3>${day}</h3>
             <input type="date" class="day-date">
             <span class="count"><span class="count-n">0</span> exercises</span>
+            <button class="btn btn-sm export-day" data-action="export-day" title="Export this day as an image">Export day</button>
           </div>
           <div class="day-body">
             <div class="item-list">${items.map((it) => (it.type === 'group' ? groupHTML(it) : exerciseHTML(it))).join('')}</div>
@@ -399,27 +409,86 @@
       autosave.markDirty();
     }
 
-    /* ---------- Export ---------- */
-    async function exportImage() {
-      const toolbar = document.querySelector('.toolbar');
-      toolbar.style.visibility = 'hidden';
+    /* ---------- Per-day image export ----------
+     * We rasterise a purpose-built, self-contained node (plain colours, a
+     * simple table) rather than the live dark-themed DOM. That keeps the
+     * output crisp and consistent regardless of the app's styling. */
+    function buildDayExportNode(dayName, day, meta) {
+      const esc = sanitizeHTML;
+      const cell = 'padding:7px 10px;border:1px solid #e2e2e2;font-size:13px;vertical-align:top;';
+      const num = `${cell}text-align:center;`;
+      const head = 'padding:7px 10px;border:1px solid #e2e2e2;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#666;background:#f4f4f4;text-align:left;';
+
+      const exRow = (ex, inGroup) => `
+        <tr>
+          <td style="${cell}${inGroup ? 'padding-left:26px;' : ''}font-weight:600;">${esc(ex.name) || '—'}</td>
+          <td style="${num}">${esc(ex.sets)}</td>
+          <td style="${num}">${esc(ex.reps)}</td>
+          <td style="${num}">${esc(ex.weight)}</td>
+          <td style="${num}">${esc(ex.tempo)}</td>
+          <td style="${cell}">${esc(ex.notes)}</td>
+        </tr>`;
+
+      let body = '';
+      (day.items || []).forEach((item) => {
+        if (item.type === 'group') {
+          body += `<tr><td colspan="6" style="padding:8px 10px;border:1px solid #e2e2e2;background:#fff7ea;color:#9a6100;font-weight:700;font-size:12px;">${esc(item.name) || 'Group'}</td></tr>`;
+          (item.exercises || []).forEach((ex) => { body += exRow(ex, true); });
+        } else {
+          body += exRow(item, false);
+        }
+      });
+      if (!body) body = `<tr><td colspan="6" style="${cell}text-align:center;color:#888;">No exercises for this day.</td></tr>`;
+
+      const metaBits = [
+        meta.trainingPhase && `Phase: ${esc(meta.trainingPhase)}`,
+        meta.weekNumber && `Week ${esc(meta.weekNumber)}`,
+      ].filter(Boolean).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+      const dateStr = day.date ? formatDateReadable(day.date) : '';
+
+      const node = document.createElement('div');
+      node.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;padding:28px;background:#fff;color:#161616;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;';
+      node.innerHTML = `
+        <div style="border-bottom:3px solid #f59e0b;padding-bottom:10px;margin-bottom:16px;">
+          <div style="font-size:20px;font-weight:800;">${esc(meta.name) || 'Strength Program'}</div>
+          ${metaBits ? `<div style="font-size:12px;color:#666;margin-top:3px;">${metaBits}</div>` : ''}
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+          <div style="font-size:17px;font-weight:700;color:#b5730a;">${esc(dayName)}</div>
+          ${dateStr ? `<div style="font-size:13px;color:#666;">${dateStr}</div>` : ''}
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th style="${head}">Exercise</th>
+            <th style="${head}text-align:center;width:52px;">Sets</th>
+            <th style="${head}text-align:center;width:60px;">Reps</th>
+            <th style="${head}text-align:center;width:64px;">Load</th>
+            <th style="${head}text-align:center;width:78px;">Tempo</th>
+            <th style="${head}">Notes</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table>`;
+      return node;
+    }
+
+    async function exportDay(dayName) {
+      const data = getData();
+      const day = data.days[dayName] || { date: '', items: [] };
+      const node = buildDayExportNode(dayName, day, data);
+      document.body.appendChild(node);
       try {
-        const canvas = await html2canvas(document.getElementById('capture'), {
-          backgroundColor: getComputedStyle(document.body).backgroundColor,
-          scale: 2,
-          logging: false,
-        });
+        const canvas = await html2canvas(node, { backgroundColor: '#ffffff', scale: 2, logging: false });
+        const base = (data.name || 'strength-program').trim().replace(/\s+/g, '-');
         const link = document.createElement('a');
-        const name = document.getElementById('programName').value || 'strength-program';
-        link.download = `${name}-${formatDate(new Date())}.png`;
+        link.download = `${base}-${dayName}-${formatDate(new Date())}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
-        showToast('Image exported', 'success');
+        showToast(`${dayName} exported`, 'success');
       } catch (err) {
         console.error('Export failed:', err);
-        showToast('Image export failed', 'error');
+        showToast('Export failed', 'error');
       } finally {
-        toolbar.style.visibility = '';
+        node.remove();
       }
     }
 
@@ -439,7 +508,12 @@
       const root = document.getElementById('workoutDays');
       root.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');
-        if (btn) handleAction(btn.dataset.action, btn);
+        if (!btn) return;
+        if (btn.dataset.action === 'export-day') {
+          exportDay(btn.closest('.day').dataset.day);
+          return;
+        }
+        handleAction(btn.dataset.action, btn);
       });
 
       // Any text change marks the program dirty (debounced save handled centrally).
@@ -448,7 +522,6 @@
       });
 
       document.getElementById('saveBtn').addEventListener('click', () => autosave.save(true));
-      document.getElementById('exportBtn').addEventListener('click', exportImage);
       document.getElementById('printBtn').addEventListener('click', () => window.print());
     });
   </script>
